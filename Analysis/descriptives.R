@@ -35,7 +35,7 @@ add_death <- function(x, w = rep(1, length(x)), nm_var, ndig = 2){
 }
 
 # Save Location
-dir_data_qd = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Data/qd/'
+dir_data_qd = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 
 # scenarios
 scenarios <- expand.grid(dual = c(0,1,2), race = c("all","white","black"), sex = c(0,1,2),
@@ -110,7 +110,7 @@ for (i in 1:nrow(scenarios)){
   
   colnames(table1) <- c("Variable", "Level", "Rows", "N", "%")
   
-  write_csv(data.frame(table1), path = paste0('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Output/Tables/table1_',
+  write_csv(data.frame(table1), path = paste0('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Tables/table1_',
                                               scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
   
   # Table 2 -----------------------------------------------------------------
@@ -154,7 +154,7 @@ for (i in 1:nrow(scenarios)){
   
   colnames(table2) <- c("Variable", "Level", "Rows", "Mean", "SD")
   
-  write_csv(data.frame(table2), path = paste0('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Output/Tables/table2_',
+  write_csv(data.frame(table2), path = paste0('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Tables/table2_',
                                               scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
   
 }

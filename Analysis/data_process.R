@@ -24,20 +24,18 @@ SOUTH = c("DC","VA","NC","WV","KY","SC","GA","FL","AL","TN","MS","AR","MD","DE",
 MIDWEST = c("OH","IN","MI","IA","MO","WI","MN","SD","ND","IL","KS","NE")
 WEST = c("MT","CO","WY","ID","UT","NV","CA","OR","WA","AZ","NM")
 
-# creates region
+# create region
 national_merged2016$region=ifelse(national_merged2016$state %in% NORTHEAST, "NORTHEAST",
                                      ifelse(national_merged2016$state %in% SOUTH, "SOUTH",
                                             ifelse(national_merged2016$state %in% MIDWEST, "MIDWEST",
                                                    ifelse(national_merged2016$state %in% WEST, "WEST", NA))))
 
 national_merged2016 <- national_merged2016[complete.cases(national_merged2016[,c(1:27)]) ,]
-save(national_merged2016, file = "~/shared_space/ci3_analysis/josey_erc_strata/Data/national_merged2016.RData")
+save(national_merged2016, file = "/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/national_merged2016.RData")
 
-### Build Clean Aggregate Data Set
+### Build Clean Aggregate Data Set - Outcomes, Exposures, Covariates, and Offsets
 
-## Outcomes, Exposures, Covariates, and Offsets
-
-load("~/shared_space/ci3_analysis/josey_erc_strata/Data/national_merged2016.RData")
+load("/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/national_merged2016.RData")
 national_merged2016$time_count <- rep(1, nrow(national_merged2016))
 national_merged2016$age_break <- cut(national_merged2016$age, c(65,70,75,80,85,90,95,125), right = FALSE)
 national_merged2016$female <- national_merged2016$sex - 1
@@ -61,7 +59,7 @@ rm(national_merged2016, new_data); gc()
 aggregate_data <- merge(dead_personyear, confounders, by = c("zip","year","female","race","dual","age_break"))
 aggregate_data <- aggregate_data[complete.cases(aggregate_data),]
 
-save(aggregate_data, file = "~/shared_space/ci3_analysis/josey_erc_strata/Data/aggregate_data.RData")
+save(aggregate_data, file = "/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/aggregate_data.RData")
 
 rm(dead_personyear, confounders, aggregate_data); gc()
 
@@ -108,14 +106,12 @@ create_strata <- function(data, dual = c(0,1,2), race = c("all", "white", "black
 }
 
 # scenarios
-scenarios <- expand.grid(dual = c(0, 1, 2), race = c("white", "black", "asian", "hispanic", "all"))
+scenarios <- expand.grid(dual = c(0, 1), race = c("white", "black", "asian", "hispanic", "other"))
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 
 # Save Location
-dir_data = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Data/qd/'
-
-## QD Strata
+dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 
 load(paste0(dir_data,"aggregate_data.RData"))
 aggregate_data$zip <- factor(aggregate_data$zip)

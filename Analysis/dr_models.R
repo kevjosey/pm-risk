@@ -8,24 +8,24 @@ library(gam)
 library(ggplot2)
 library(cobalt)
 
-source('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Code/R/erf.R')
-source('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Code/R/calibrate.R')
+source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/erf.R')
+source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(dual = c(0, 1, 2), race = c("all", "white","black"), sex = c(0, 1, 2),
-                         age_break = c("all","[65,75)","[75,85)","[85,95)","[95,125)"))
+scenarios <- expand.grid(race = c("white","black", "asian", "hispanic", "other"),
+                         dual = c(0, 1), sex = c("male", "female"),
+                         age_break = c("[65,75)","[75,85)","[85,95)","[95,125)"))
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 scenarios$age_break <- as.character(scenarios$age_break)
 a.vals <- seq(4, 16, length.out = 241)
-n.boot <- 1000
 
 # Load/Save models
-dir_data = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Data/qd/'
-dir_mod = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Output/DR_mod/'
+dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
+dir_mod = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_mod/'
 
 for (i in 1:nrow(scenarios)) {
   
@@ -34,11 +34,12 @@ for (i in 1:nrow(scenarios)) {
   
   x.tmp <- setDF(new_data$x)
   w.tmp <- setDF(new_data$w)
-
-  if (scenario$age_break != "all")
-    w.tmp <- setDF(subset(w.tmp, age_break == scenario$age_break))
-  if (scenario$sex != 2)
-    w.tmp <- setDF(subset(w.tmp, sex == scenario$sex))
+  w.tmp <- setDF(subset(w.tmp, age_break == scenario$age_break))
+  
+  if (scenario$sex == "male")
+    w.tmp <- setDF(subset(w.tmp, sex == 0))
+  else
+    w.tmp <- setDF(subset(w.tmp, sex == 1))
   
   wx.tmp <- merge(w.tmp, x.tmp, by = c("zip", "year"))
   

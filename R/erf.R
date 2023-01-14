@@ -105,10 +105,10 @@ gam_models <- function(y, a_w, w, w.id, a_x, x, x.id,
   
   # truncation
   ipw.lm <- phat.lm/pihat.lm
-  trunc0.lm <- quantile(ipw.lm[1:n], trunc)
-  trunc1.lm <- quantile(ipw.lm[1:n], 1 - trunc)
-  ipw.lm[ipw.lm < trunc0.lm] <- trunc0.lm
-  ipw.lm[ipw.lm > trunc1.lm] <- trunc1.lm
+  trunc0 <- quantile(ipw.lm[1:n], trunc)
+  trunc1 <- quantile(ipw.lm[1:n], 1 - trunc)
+  ipw.lm[ipw.lm < trunc0] <- trunc0
+  ipw.lm[ipw.lm > trunc1] <- trunc1
   
   # full calibration weights
   x <- x %>% mutate_if(is.numeric, scale)

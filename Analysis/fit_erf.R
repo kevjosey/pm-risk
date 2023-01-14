@@ -10,17 +10,15 @@ library(xgboost)
 library(ggplot2)
 library(cobalt)
 
-source('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Code/R/erf.R')
-source('/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Code/R/calibrate.R')
+source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/erf.R')
+source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(dual = c("0", "1", ""), race = c("white","black", ""),
-                         sex = c("0", "1", "2"), age_break = c("\\[65,75)","\\[75,85)","\\[85,95)",""))
-scen_names <- expand.grid(dual = c("0", "1", "2"), race = c("white","black","all"),
-                          c("0", "1", "2"), age_break = c("[65,75)","[75,85)","[85,95)",""))
+scenarios <- expand.grid(dual = c("0", "1", ""), race = c("white","black","hispanic","asian",""))
+scen_names <- expand.grid(dual = c("0", "1", "2"), race = c("white","black","hispanic","asian","all"))
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 scenarios$age_break <- as.character(scenarios$age_break)
@@ -28,11 +26,11 @@ a.vals <- seq(4, 16, length.out = 241)
 n.boot <- 1000
 
 # Load/Save models
-dir_mod_qd = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Output/DR_mod/'
-dir_out_qd = '/nfs/nsaph_ci3/ci3_analysis/josey_erc_strata/Output/DR_all/'
+dir_mod = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_mod/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_all/'
 
-filenames <- list.files(dir_mod_qd, full.names = TRUE)
-fnames <- list.files(dir_mod_qd, full.names = FALSE)
+filenames <- list.files(dir_mod, full.names = TRUE)
+fnames <- list.files(dir_mod, full.names = FALSE)
 
 ## Run Models
 
@@ -43,10 +41,9 @@ for (i in 1:nrow(scenarios)) {
   
   grep1 <- grep(scenario[1], fnames)
   grep2 <- grep(scenario[2], fnames)
-  grep3 <- grep(scenario[3], fnames)
   idx <- 1:length(filenames)
   
-  fn <- filenames[(idx %in% grep1) & (idx %in% grep2) & (idx %in% grep3)]
+  fn <- filenames[(idx %in% grep1) & (idx %in% grep2)]
   
   w.id <- log.pop <- nval <- NULL
   muhat.mat <- phat.tmp <- NULL
@@ -94,7 +91,7 @@ for (i in 1:nrow(scenarios)) {
   target <- count_erf(psi.lm = psi.lm, psi.cal = psi.cal, w.id = w.id, x.id = x.id, a = a_x, 
                       log.pop = log.pop, int.mat = int.mat, bw = 1, a.vals = a.vals, se.fit = TRUE)
   
-  print(paste0("Initial Fit Complete: Scenario ", i, " QD"))
+  print(paste0("Initial Fit Complete: Scenario ", i))
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm),
@@ -108,9 +105,9 @@ for (i in 1:nrow(scenarios)) {
                 sl.vcov = vcov(target$fit.sl),
                 cal.vcov = vcov(target$fit.cal))
   
-  print(paste0("Fit Complete: Scenario ", i, " QD"))
+  print(paste0("Fit Complete: Scenario ", i))
   save(individual_data, zip_data, est_data, extra,
-       file = paste0(dir_out_qd, sname$dual, "_", sname$race,
-                     "_", sname$age_break, "_qd.RData"))
+       file = paste0(dir_out, sname$dual, "_", sname$race,
+                     sname$sex, "_", sname$age_break, ".RData"))
   
 }
