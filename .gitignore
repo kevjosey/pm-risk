@@ -17,6 +17,9 @@
 # Output files from R CMD check
 /*.Rcheck/
 
+# Apple bleh
+*.DS_Store
+
 # RStudio files
 .Rproj.user/
 
