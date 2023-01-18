@@ -100,7 +100,7 @@ for (i in 1:nrow(scenarios)) {
   target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
                       a = a_x, x.id = x.id, bw = 1.8, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
-  print(paste0("Initial Fit Complete: Scenario ", i))
+  print(paste0("Fit Complete: Scenario ", i))
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
@@ -113,7 +113,6 @@ for (i in 1:nrow(scenarios)) {
                 lm.vcov = vcov(target$fit.lm),
                 cal.vcov = vcov(target$fit.cal))
   
-  print(paste0("Fit Complete: Scenario ", i))
   save(individual_data, zip_data, est_data, extra,
        file = paste0(dir_out, sname$dual, "_", sname$race, ".RData"))
   
