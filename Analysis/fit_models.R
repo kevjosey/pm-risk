@@ -27,7 +27,7 @@ a.vals <- seq(0.00783038, 30.92493, length.out = 201)
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data/'
 
-for (i in 65:80) {
+for (i in 1:nrow(scenarios)) {
   
   print(i)
   
@@ -57,7 +57,7 @@ for (i in 65:80) {
   a_w <- wx.tmp$pm25
   log.pop <- log(wx.tmp$time_count)
   x <- subset(x.tmp, select = -c(zip, pm25))
-  w <- subset(wx.tmp, select = -c(zip, pm25, race, dual, dead, time_count, age_break))
+  w <- subset(wx.tmp, select = -c(zip, pm25, race, dual, dead, time_count, female, age_break))
   
   model_data <- gam_models(y = y, a_w = a_w, w = w, w.id = w.id, log.pop = log.pop, 
                            a_x = a_x, x = x, x.id = x.id, a.vals = a.vals)

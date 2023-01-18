@@ -2,7 +2,7 @@
 count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw = 1,
                        a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, se.fit = TRUE) {	
   
-  # marginalize psi within zip-year
+  ## Marginalize Pseudo Outcome and EIF within Zip-Year
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
   
   # LM GPS
@@ -27,13 +27,13 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  mhat.vals <- apply(muhat.mat.new, 2, weighted.mean, w = wts)
+  mhat.vals <- colMeans(muhat.mat)
   mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
   
   if (is.null(phat.vals))
     phat.vals <- rep(1, length(a.vals))
   
-  # Integration Matrix
+  # Integration Matrix for EIF
   mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
@@ -50,9 +50,9 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
   out.cal <- sapply(a.vals, kern_est, psi = psi.cal, a = cal.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
-  # linear model approx
-  fit.lm <- lm(psi ~ a, weights = lm.dat$wts, data = lm.dat)
-  fit.cal <- lm(psi ~ a, weights = cal.dat$wts, data = cal.dat)
+  # linear model approx for sanity
+  fit.lm <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.lm, lm.dat))
+  fit.cal <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.cal, cal.dat))
   
   if (se.fit) {
     
@@ -80,6 +80,7 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
   
 }
 
+# KWLS estimation function
 kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals = NULL, int.mat = NULL) {
   
   n <- length(a)
@@ -101,10 +102,10 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
     eta <- c(g.std %*% b)
     
     kern.mat <- matrix(rep(dnorm((a.vals - a.new) / bw) / bw, n), byrow = T, nrow = n)
-    g.vals <- matrix(rep(c(a.vals - a.new) / bw, n), byrow = T, nrow = n)
+    g.mat <- matrix(rep(c(a.vals - a.new) / bw, n), byrow = T, nrow = n)
     
     intfn1.mat <- kern.mat * int.mat
-    intfn2.mat <- g.vals * kern.mat * int.mat
+    intfn2.mat <- g.mat * kern.mat * int.mat
     int1 <- apply(matrix(rep((a.vals[-1] - a.vals[-length(a.vals)]), n), byrow = T, nrow = n)*
                     (intfn1.mat[,-1] + intfn1.mat[,-length(a.vals)])/2, 1, sum)
     int2 <- apply(matrix(rep((a.vals[-1] - a.vals[-length(a.vals)]), n), byrow = T, nrow = n)*
@@ -122,7 +123,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   
 }
 
-# cross validated bandwidth
+# cross validation to find KWLS bandwidth
 cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.05, 1, by = 0.05)) {
   
   if(is.null(weights))

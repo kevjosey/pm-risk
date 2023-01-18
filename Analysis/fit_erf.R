@@ -80,21 +80,21 @@ for (i in 1:nrow(scenarios)) {
   a_x <- zip_data$pm25
   
   # 10-fold CV to find bandwidth
-  # if (i == 1) {
-  # 
-  #   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-  #   list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
-  #   psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
-  #                             wts = wts, id = names(list.cal))
-  #   cal.dat <- inner_join(psi.cal.new, data.frame(a = a_x, id = x.id), by = "id")
-  #   cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),]
-  # 
-  #   bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
-  #                bw.seq = seq(0.1, 4, by = 0.1), folds = 10)
-  # 
-  #   rm(wts, list.cal, psi.cal.new, cal.dat); gc()
-  # 
-  # }
+  if (i == 1) {
+
+    wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+    list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
+    psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
+                              wts = wts, id = names(list.cal))
+    cal.dat <- inner_join(psi.cal.new, data.frame(a = a_x, id = x.id), by = "id")
+    cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),]
+
+    bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
+                 bw.seq = seq(0.1, 4, by = 0.1), folds = 10)
+
+    rm(wts, list.cal, psi.cal.new, cal.dat); gc()
+
+  }
 
   # fit exposure response curves
   target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
@@ -104,9 +104,7 @@ for (i in 1:nrow(scenarios)) {
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
-                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal), n.cal = target$n.cal,
-                         linear.lm = predict(target$fit.lm, newdata = data.frame(a = a.vals)),
-                         linear.cal = predict(target$fit.cal, newdata = data.frame(a = a.vals)))
+                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal), n.cal = target$n.cal)
   
   extra <- list(lm.coef = target$fit.lm$coefficients,
                 cal.coef = target$fit.cal$coefficients,

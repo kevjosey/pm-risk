@@ -44,9 +44,9 @@ gam_models <- function(y, a_w, w, w.id, a_x, x, x.id,
   phat.vals.lm <- colMeans(pihat.mat.lm[1:n,], na.rm = TRUE)
   phat.lm <- predict(smooth.spline(a.vals, phat.vals.lm), x = c(a_x, a_w))$y
   phat.lm[phat.lm < 0] <- .Machine$double.eps
+  ipw.lm <- phat.lm/pihat.lm
   
   # truncation
-  ipw.lm <- phat.lm/pihat.lm
   trunc0 <- quantile(ipw.lm[1:n], trunc)
   trunc1 <- quantile(ipw.lm[1:n], 1 - trunc)
   ipw.lm[ipw.lm < trunc0] <- trunc0

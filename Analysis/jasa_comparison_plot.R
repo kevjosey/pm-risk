@@ -25,7 +25,7 @@ ggplot(data=DR100_table, aes(x=a.vals, y = ERC, color = Methods)) +
   #  labels=c("Matching", "Doubly Robust")) +
   scale_color_manual(values=c("green", "blue", "red"),
                      labels = c("Kevin - Doubly Robust", "Xiao - Doubly Robust", "Matching"),
-                     breaks = c("CAL", "Doubly Robust", "Matching")) +
+                     breaks = c("LM", "Doubly Robust", "Matching")) +
   theme_bw() +
   #guides(colour = FALSE) +
   theme(plot.title = element_text(hjust = 0.5),
