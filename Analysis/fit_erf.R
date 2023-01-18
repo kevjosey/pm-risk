@@ -75,9 +75,6 @@ for (i in 1:nrow(scenarios)) {
   individual_data <- i_data
   
   rm(z_data, i_data, phat.tmp, nval); gc()
-
-  psi.lm <- resid.lm + mhat
-  psi.cal <- resid.cal + mhat
   
   x.id <- paste(zip_data$zip, zip_data$year, sep = "-")
   a_x <- zip_data$pm25

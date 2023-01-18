@@ -28,7 +28,7 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
   } ))
   
   mhat.vals <- apply(muhat.mat.new, 2, weighted.mean, w = wts)
-  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$pm25)$y
+  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
   
   if (is.null(phat.vals))
     phat.vals <- rep(1, length(a.vals))
@@ -77,6 +77,48 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
                  estimate.cal = out.cal, n.cal = n.cal, fit.cal = fit.cal))
     
   }
+  
+}
+
+kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals = NULL, int.mat = NULL) {
+  
+  n <- length(a)
+  
+  if(is.null(weights))
+    weights <- rep(1, times = length(a))
+  
+  # Gaussian Kernel
+  a.std <- (a - a.new) / bw
+  k.std <- dnorm(a.std) / bw
+  g.std <- cbind(1, a.std)
+  
+  b <- lm(psi ~ -1 + g.std, weights = k.std*weights)$coefficients
+  mu <- b[1]
+  n.std <- sum(weights*k.std) 
+  
+  if (se.fit & !is.null(int.mat) & !is.null(a.vals)) {
+    
+    eta <- c(g.std %*% b)
+    
+    kern.mat <- matrix(rep(dnorm((a.vals - a.new) / bw) / bw, n), byrow = T, nrow = n)
+    g.vals <- matrix(rep(c(a.vals - a.new) / bw, n), byrow = T, nrow = n)
+    
+    intfn1.mat <- kern.mat * int.mat
+    intfn2.mat <- g.vals * kern.mat * int.mat
+    int1 <- apply(matrix(rep((a.vals[-1] - a.vals[-length(a.vals)]), n), byrow = T, nrow = n)*
+                    (intfn1.mat[,-1] + intfn1.mat[,-length(a.vals)])/2, 1, sum)
+    int2 <- apply(matrix(rep((a.vals[-1] - a.vals[-length(a.vals)]), n), byrow = T, nrow = n)*
+                    (intfn2.mat[,-1] + intfn2.mat[,-length(a.vals)])/2, 1, sum)
+    
+    U <- solve(crossprod(g.std, weights*k.std*g.std))
+    V <- cbind(weights * (k.std * (psi - eta) + int1),
+               weights * (a.std * k.std * (psi - eta) + int2))
+    Sig <- U %*% crossprod(V) %*% U
+    
+    return(c(mu = mu, sig2 = Sig[1,1], n = n.std))
+    
+  } else
+    return(c(mu = mu, n = n.std))
   
 }
 
