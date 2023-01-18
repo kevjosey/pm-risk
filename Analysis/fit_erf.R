@@ -100,7 +100,7 @@ for (i in 1:nrow(scenarios)) {
   # }
 
   # fit exposure response curves
-  target <- count_erf(psi.lm = psi.lm, psi.cal = psi.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
+  target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
                       a = a_x, x.id = x.id, bw = 1.8, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
   print(paste0("Initial Fit Complete: Scenario ", i))

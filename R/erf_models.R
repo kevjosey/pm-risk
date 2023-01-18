@@ -27,7 +27,7 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  mhat.vals <- apply(muhat.mat, 2, weighted.mean, w = wts)
+  mhat.vals <- apply(muhat.mat.new, 2, weighted.mean, w = wts)
   mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$pm25)$y
   
   if (is.null(phat.vals))
