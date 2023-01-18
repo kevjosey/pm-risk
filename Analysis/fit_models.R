@@ -1,3 +1,4 @@
+.libPaths("~/apps/R_4.0.2")
 
 library(parallel)
 library(data.table)
@@ -5,11 +6,10 @@ library(tidyr)
 library(dplyr)
 library(splines)
 library(gam)
-library(ggplot2)
-library(cobalt)
 
-source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/erf.R')
-source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/calibrate.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
 ## Setup
@@ -21,26 +21,29 @@ scenarios <- expand.grid(race = c("white","black", "asian", "hispanic", "other")
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 scenarios$age_break <- as.character(scenarios$age_break)
-a.vals <- seq(4, 16, length.out = 241)
+a.vals <- seq(0.00783038, 30.92493, length.out = 201)
 
 # Load/Save models
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_mod = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_mod/'
+dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data/'
 
-for (i in 1:nrow(scenarios)) {
+for (i in 65:80) {
+  
+  print(i)
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
-  
+
   x.tmp <- setDF(new_data$x)
   w.tmp <- setDF(new_data$w)
   w.tmp <- setDF(subset(w.tmp, age_break == scenario$age_break))
   
-  if (scenario$sex == "male")
-    w.tmp <- setDF(subset(w.tmp, sex == 0))
-  else
-    w.tmp <- setDF(subset(w.tmp, sex == 1))
-  
+  if (scenario$sex == "male") {
+    w.tmp <- setDF(subset(w.tmp, female == 0))
+  } else {
+    w.tmp <- setDF(subset(w.tmp, female == 1))
+  }
+
   wx.tmp <- merge(w.tmp, x.tmp, by = c("zip", "year"))
   
   x.id <- paste(x.tmp$zip, x.tmp$year, sep = "-")

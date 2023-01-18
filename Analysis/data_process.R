@@ -37,9 +37,10 @@ save(national_merged2016, file = "/n/dominici_nsaph_l3/Lab/projects/analytic/erc
 
 load("/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/national_merged2016.RData")
 national_merged2016$time_count <- rep(1, nrow(national_merged2016))
-national_merged2016$age_break <- cut(national_merged2016$age, c(65,70,75,80,85,90,95,125), right = FALSE)
+national_merged2016$age_break <- cut(national_merged2016$age, c(65,75,85,95,125), right = FALSE)
 national_merged2016$female <- national_merged2016$sex - 1
 colnames(national_merged2016)[12] <- "pm25"
+national_merged2016$race[national_merged2016$race == 6] <- 3
 
 dead_personyear <- aggregate(data.frame(dead = national_merged2016$dead,
                                         time_count = national_merged2016$time_count),
@@ -65,7 +66,7 @@ rm(dead_personyear, confounders, aggregate_data); gc()
 
 ### Create Strata Data
 
-create_strata <- function(data, dual = c(0,1,2), race = c("all", "white", "black", "asian", "hispanic")) {
+create_strata <- function(data, dual = c(0,1), race = c("white", "black", "asian", "hispanic", "other")) {
   
   zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
                "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
@@ -74,8 +75,6 @@ create_strata <- function(data, dual = c(0,1,2), race = c("all", "white", "black
     dual0 <- 0
   } else if (dual == 1) {
     dual0 <- 1
-  } else {
-    dual0 <- c(0,1)
   }
   
   if (race == "white") {
@@ -86,8 +85,8 @@ create_strata <- function(data, dual = c(0,1,2), race = c("all", "white", "black
     race0 <- 4
   } else if (race == "hispanic") {
     race0 <- 5
-  } else {
-    race0 <- c(1,2,3,4,5)
+  } else if (race == "other") {
+    race0 <- 3
   }
   
   sub_data <- subset(data, race %in% race0 & dual %in% dual0)
@@ -111,7 +110,7 @@ scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 
 # Save Location
-dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
+dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/'
 
 load(paste0(dir_data,"aggregate_data.RData"))
 aggregate_data$zip <- factor(aggregate_data$zip)
@@ -126,6 +125,6 @@ lapply(1:nrow(scenarios), function(i, ...) {
   
   scenario <- scenarios[i,]
   new_data <- create_strata(data = aggregate_data, dual = scenario$dual, race = scenario$race)
-  save(new_data, file = paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
+  save(new_data, file = paste0(dir_data, "qd/", scenario$dual, "_", scenario$race, ".RData"))
   
 })

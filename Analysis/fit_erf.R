@@ -4,30 +4,29 @@ library(data.table)
 library(tidyr)
 library(dplyr)
 library(splines)
-library(gam)
-library(SuperLearner)
-library(xgboost)
 library(ggplot2)
-library(cobalt)
 
-source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/erf.R')
-source('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/pm-risk/R/calibrate.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
+source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(dual = c("0", "1", ""), race = c("white","black","hispanic","asian",""))
-scen_names <- expand.grid(dual = c("0", "1", "2"), race = c("white","black","hispanic","asian","all"))
+scenarios <- expand.grid(dual = c("", "high", "low"), race = c("", "white","black"))
+scen_names <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))
+# scenarios <- expand.grid(dual = c("high", "low"), race = c("asian","hispanic", "other"))
+# scen_names <- expand.grid(dual = c("high", "low"), race = c("asian","hispanic","other"))
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
-scenarios$age_break <- as.character(scenarios$age_break)
-a.vals <- seq(4, 16, length.out = 241)
-n.boot <- 1000
+a.vals.old <- seq(0.00783038, 30.92493, length.out = 201)
+a.vals <- a.vals.old[c(T,F)]
+rm_idx <- which(a.vals.old %in% a.vals)
 
 # Load/Save models
-dir_mod = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_mod/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Output/DR_all/'
+dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
 
 filenames <- list.files(dir_mod, full.names = TRUE)
 fnames <- list.files(dir_mod, full.names = FALSE)
@@ -47,67 +46,78 @@ for (i in 1:nrow(scenarios)) {
   
   w.id <- log.pop <- nval <- NULL
   muhat.mat <- phat.tmp <- NULL
-  resid.lm <- resid.sl <- resid.cal <- NULL
-  ind_data <- z_data <- NULL
+  resid.lm <- resid.cal <- NULL
+  i_data <- z_data <- NULL
   
   for (j in 1:length(fn)) {
     
     load(paste0(fn[j]))
+    print(j)
     
     w.id <- c(w.id, model_data$w.id)
     log.pop <- c(log.pop, model_data$log.pop)
     nval <- c(nval, sum(exp(model_data$log.pop)))
     
-    muhat.mat <- rbind(muhat.mat, model_data$muhat.mat)
-    phat.tmp <- rbind(phat.tmp, model_data$phat.vals)
+    muhat.mat <- rbind(muhat.mat, model_data$muhat.mat[,rm_idx])
+    phat.tmp <- rbind(phat.tmp, model_data$phat.vals[rm_idx])
     
     resid.lm <- c(resid.lm, model_data$resid.lm)
     resid.cal <- c(resid.cal, model_data$resid.cal)
     
-    ind_data <- rbind(ind_data, individual_data)
+    i_data <- rbind(i_data, individual_data)
     z_data <- rbind(z_data, zip_data)
     
   }
   
   # summary data
-  mhat.vals <- apply(muhat.mat, 2, weighted.mean, w = exp(log.pop))
   phat.vals <- apply(phat.tmp, 2, weighted.mean, w = nval)
-  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = ind_data$pm25)$y
   zip_data <- z_data[!duplicated(paste(z_data$zip, z_data$year, sep = "-")),]
-  individual_data <- ind_data
-  rm(z_data,ind_data,phat.tmp)
+  individual_data <- i_data
   
-  # integration matrix
-  mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat)), byrow = TRUE, nrow = nrow(muhat.mat))
-  phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat)), byrow = TRUE, nrow = nrow(muhat.mat))
-  int.mat <- (muhat.mat - mhat.mat)*phat.mat
-  
+  rm(z_data, i_data, phat.tmp, nval); gc()
+
   psi.lm <- resid.lm + mhat
   psi.cal <- resid.cal + mhat
   
   x.id <- paste(zip_data$zip, zip_data$year, sep = "-")
   a_x <- zip_data$pm25
   
-  target <- count_erf(psi.lm = psi.lm, psi.cal = psi.cal, w.id = w.id, x.id = x.id, a = a_x, 
-                      log.pop = log.pop, int.mat = int.mat, bw = 1, a.vals = a.vals, se.fit = TRUE)
+  # 10-fold CV to find bandwidth
+  # if (i == 1) {
+  # 
+  #   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+  #   list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
+  #   psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
+  #                             wts = wts, id = names(list.cal))
+  #   cal.dat <- inner_join(psi.cal.new, data.frame(a = a_x, id = x.id), by = "id")
+  #   cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),]
+  # 
+  #   bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
+  #                bw.seq = seq(0.1, 4, by = 0.1), folds = 10)
+  # 
+  #   rm(wts, list.cal, psi.cal.new, cal.dat); gc()
+  # 
+  # }
+
+  # fit exposure response curves
+  target <- count_erf(psi.lm = psi.lm, psi.cal = psi.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
+                      a = a_x, x.id = x.id, bw = 1.8, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
   print(paste0("Initial Fit Complete: Scenario ", i))
   
   est_data <- data.frame(a.vals = a.vals,
-                         estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm),
-                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal),
+                         estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
+                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal), n.cal = target$n.cal,
                          linear.lm = predict(target$fit.lm, newdata = data.frame(a = a.vals)),
                          linear.cal = predict(target$fit.cal, newdata = data.frame(a = a.vals)))
   
   extra <- list(lm.coef = target$fit.lm$coefficients,
                 cal.coef = target$fit.cal$coefficients,
                 lm.vcov = vcov(target$fit.lm),
-                sl.vcov = vcov(target$fit.sl),
                 cal.vcov = vcov(target$fit.cal))
   
   print(paste0("Fit Complete: Scenario ", i))
   save(individual_data, zip_data, est_data, extra,
-       file = paste0(dir_out, sname$dual, "_", sname$race,
-                     sname$sex, "_", sname$age_break, ".RData"))
+       file = paste0(dir_out, sname$dual, "_", sname$race, ".RData"))
   
 }
