@@ -64,8 +64,7 @@ gam_models <- function(y, a_w, w, w.id, a_x, x, x.id,
   ipw.cal_mat <- inner_join(x = data.frame(id = w.id), 
                             y = data.frame(id = x.id, wts = ipw.cal_x), 
                             by = "id")
-  ipw.cal_w <- ipw.cal_mat$wts
-  ipw.cal <- c(ipw.cal_x, ipw.cal_w)
+  ipw.cal <- c(ipw.cal_x, ipw.cal_mat$wts)
   
   if (any(ipw.cal_mat$id != w.id))
     stop("id is getting scrambled!")
@@ -75,7 +74,7 @@ gam_models <- function(y, a_w, w, w.id, a_x, x, x.id,
   resid.cal <- c(ybar - muhat)*ipw.cal[-(1:n)]
   
   out <- list(resid.lm = resid.lm, weights.lm_x = ipw.lm[1:n], weights.lm_w = ipw.lm[-(1:n)],
-              resid.cal = resid.cal, weights.cal_x = ipw.cal_x, weights.cal_w = ipw.cal_w, 
+              resid.cal = resid.cal, weights.cal_x = ipw.cal[1:n], weights.cal_w = ipw.cal[-(1:n)], 
               muhat.mat = muhat.mat, phat.vals = phat.vals.lm, w.id = w.id, log.pop = log.pop)
   
   return(out)

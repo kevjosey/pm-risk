@@ -1,14 +1,15 @@
 # wrapper function to fit a nonparametric ERF with measurement error using kernel-weighted regression
-count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw = 1,
-                       a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, se.fit = TRUE) {	
+count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
+                      a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
+                      bw = 1, se.fit = TRUE) {	
   
-  ## Marginalize Pseudo Outcome and EIF within Zip-Year
+  # marginalize psi within zip-year
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
   
   # LM GPS
   list.lm <- split(data.frame(resid = resid.lm, wts = exp(log.pop)), w.id)
   resid.lm.new <- data.frame(resid = do.call(c, lapply(list.lm, function(df) sum(df$resid*df$wts)/sum(df$wts))), 
-                           wts = wts, id = names(list.lm))
+                             wts = wts, id = names(list.lm))
   lm.dat <- inner_join(resid.lm.new, data.frame(a = a, id = x.id), by = "id")
   
   # Calibration Weights
@@ -17,40 +18,37 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
                               wts = wts, id = names(list.cal))
   cal.dat <- inner_join(resid.cal.new, data.frame(a = a, id = x.id), by = "id")
   
-  rm(list.lm, resid.lm.new, list.cal, resid.cal.new); gc()
-  
   # Prediction Matrix
   mat.list <- split(cbind(exp(log.pop), muhat.mat), w.id)
-
+  
   muhat.mat.new <- do.call(rbind, lapply(mat.list, function(vec) {
     mat <- matrix(vec, ncol = length(a.vals) + 1)
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  mhat.vals <- colMeans(muhat.mat)
+  mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
   mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
   
   if (is.null(phat.vals))
     phat.vals <- rep(1, length(a.vals))
   
-  # Integration Matrix for EIF
+  # Integration Matrix
   mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
-  rm(phat.mat, phat.vals, mhat.mat, mhat.vals); gc()
-  
+  # Pseudo-Outcomes
   psi.lm <- lm.dat$resid + mhat
   psi.cal <- cal.dat$resid + mhat
   
-  # KWLS regression
+  # KWLS Regression
   out.lm <- sapply(a.vals, kern_est, psi = psi.lm, a = lm.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
-
+  
   out.cal <- sapply(a.vals, kern_est, psi = psi.cal, a = cal.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
-  # linear model approx for sanity
+  # Linear Model Approximations
   fit.lm <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.lm, lm.dat))
   fit.cal <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.cal, cal.dat))
   
@@ -80,7 +78,6 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id, bw
   
 }
 
-# KWLS estimation function
 kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals = NULL, int.mat = NULL) {
   
   n <- length(a)
@@ -123,7 +120,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   
 }
 
-# cross validation to find KWLS bandwidth
+# cross validated bandwidth
 cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.05, 1, by = 0.05)) {
   
   if(is.null(weights))
