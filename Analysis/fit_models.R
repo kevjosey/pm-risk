@@ -34,6 +34,8 @@ for (i in 1:nrow(scenarios)) {
   phat.vals <- new_data$phat.vals
   x.tmp <- setDF(new_data$x)
   w.tmp <- setDF(new_data$w)
+  
+  # subset
   w.tmp <- setDF(subset(w.tmp, age_break == scenario$age_break))
   
   if (scenario$sex == "male") {
@@ -42,8 +44,10 @@ for (i in 1:nrow(scenarios)) {
     w.tmp <- setDF(subset(w.tmp, female == 1))
   }
   
+  # merge in ZIP-level covariates
   wx.tmp <- inner_join(w.tmp, x.tmp, by = c("zip", "year"))
   
+  # extract data components
   w.id <- wx.tmp$id
   y <- wx.tmp$dead
   a <- wx.tmp$pm25
@@ -51,16 +55,19 @@ for (i in 1:nrow(scenarios)) {
   ipw <- wx.tmp$ipw
   log.pop <- log(wx.tmp$time_count)
   
+  # remove identifiers
   w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
                                   race, dual, female, age_break, 
                                   id, ipw, cal))
   
+  # fit gam outcome model
   model_data <- gam_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
   individual_data <- data.frame(wx.tmp)
   zip_data <- data.frame(x.tmp)
   
   dual_name <- ifelse(scenario$dual == 0, "high", "low")
   
+  # save data
   save(model_data, individual_data, zip_data, phat.vals,
        file = paste0(dir_mod, dual_name, "_", scenario$race, "_", 
                      scenario$sex, "_", scenario$age_break, ".RData"))

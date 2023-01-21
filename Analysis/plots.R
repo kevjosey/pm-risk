@@ -20,7 +20,7 @@ ar <- data.frame()
 contrast <- data.frame()
 hr <- data.frame()
 
-# contrast indexes=
+# contrast indexes
 idx8 <- which.min(abs(a.vals - 8))
 idx9 <- which.min(abs(a.vals - 9))
 idx10 <- which.min(abs(a.vals - 10))
@@ -40,8 +40,8 @@ for (i in 1:nrow(scenarios)) {
     xiao <- data.frame(a.vals = c(est_data$a.vals, est_data$a.vals), 
                        estimate = c(est_data$estimate.lm, est_data$estimate.cal), 
                        gps_method = c(rep("LM", nrow(est_data)), rep("CAL", nrow(est_data))), 
-                       lower = c(est_data[,2] - 1.96*est_data[,6],est_data[,5] - 1.96*est_data[,6]),
-                       upper = c(est_data[,2] + 1.96*est_data[,6],est_data[,5] + 1.96*est_data[,6]))
+                       lower = c(est_data[,2] - 1.96*est_data[,3],est_data[,5] - 1.96*est_data[,6]),
+                       upper = c(est_data[,2] + 1.96*est_data[,3],est_data[,5] + 1.96*est_data[,6]))
     
     save(xiao, file = '~/Data/xiao.RData')
     
@@ -55,22 +55,22 @@ for (i in 1:nrow(scenarios)) {
   
   # absolute risks
   ar_tmp <- data.frame(a.vals = c(est_data$a.vals), 
-                       estimate = c(est_data[,5]),
-                       lower = c(est_data[,5] - 1.96*est_data[,6]),
-                       upper = c(est_data[,5] + 1.96*est_data[,6]),
+                       estimate = c(est_data[,2]),
+                       lower = c(est_data[,2] - 1.96*est_data[,3]),
+                       upper = c(est_data[,2] + 1.96*est_data[,3]),
                        race = rep(scenario$race, nrow(est_data)),
                        dual = rep(scenario$dual, nrow(est_data)))
   
   # contrasts
-  contr_tmp_11 <- as.numeric(est_data[idx12,5]) - as.numeric(est_data[idx11,5])
-  contr_tmp_10 <- as.numeric(est_data[idx12,5]) - as.numeric(est_data[idx10,5])
-  contr_tmp_9 <- as.numeric(est_data[idx12,5]) - as.numeric(est_data[idx9,5])
-  contr_tmp_8 <- as.numeric(est_data[idx12,5]) - as.numeric(est_data[idx8,5])
+  contr_tmp_11 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx11,2])
+  contr_tmp_10 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx10,2])
+  contr_tmp_9 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx9,2])
+  contr_tmp_8 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx8,2])
   
-  contr_se_11 <- sqrt(as.numeric(est_data[idx12,6])^2 + as.numeric(est_data[idx11,6])^2)
-  contr_se_10 <- sqrt(as.numeric(est_data[idx12,6])^2 + as.numeric(est_data[idx10,6])^2)
-  contr_se_9 <- sqrt(as.numeric(est_data[idx12,6])^2 + as.numeric(est_data[idx9,6])^2)
-  contr_se_8 <- sqrt(as.numeric(est_data[idx12,6])^2 + as.numeric(est_data[idx8,6])^2)
+  contr_se_11 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx11,3])^2)
+  contr_se_10 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx10,3])^2)
+  contr_se_9 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx9,3])^2)
+  contr_se_8 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx8,3])^2)
   
   contrast_tmp <- data.frame(estimate = c(contr_tmp_11, contr_tmp_10, contr_tmp_9, contr_tmp_8),
                              lower = c(contr_tmp_11 - 1.96*contr_se_11, 
@@ -89,22 +89,22 @@ for (i in 1:nrow(scenarios)) {
   contrast_tmp$contrast <- paste0(contrast_tmp$pm1, " vs. ", contrast_tmp$pm0)
   
   # hazard ratio
-  hr_tmp_8 <- c(as.numeric(est_data[,5])/as.numeric(est_data[idx8,5]))
-  hr_tmp_9 <- c(as.numeric(est_data[,5])/as.numeric(est_data[idx9,5]))
-  hr_tmp_10 <- c(as.numeric(est_data[,5])/as.numeric(est_data[idx10,5]))
-  hr_tmp_11 <- c(as.numeric(est_data[,5])/as.numeric(est_data[idx11,5]))
-  hr_tmp_12 <- c(as.numeric(est_data[,5])/as.numeric(est_data[idx12,5]))
+  hr_tmp_8 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx8,2]))
+  hr_tmp_9 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx9,2]))
+  hr_tmp_10 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx10,2]))
+  hr_tmp_11 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx11,2]))
+  hr_tmp_12 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx12,2]))
   
-  log_hr_se_8 <- sqrt(c(est_data[,6]^2)/c(est_data[,5]^2) + 
-                        c(est_data[idx8,6]^2)/c(est_data[idx8,5]^2)) 
-  log_hr_se_9 <- sqrt(c(est_data[,6]^2)/c(est_data[,5]^2) + 
-                        c(est_data[idx9,6]^2)/c(est_data[idx9,5]^2)) 
-  log_hr_se_10 <- sqrt(c(est_data[,6]^2)/c(est_data[,5]^2) + 
-                         c(est_data[idx10,6]^2)/c(est_data[idx10,5]^2)) 
-  log_hr_se_11 <- sqrt(c(est_data[,6]^2)/c(est_data[,5]^2) + 
-                         c(est_data[idx11,6]^2)/c(est_data[idx11,5]^2)) 
-  log_hr_se_12 <- sqrt(c(est_data[,6]^2)/c(est_data[,5]^2) + 
-                         c(est_data[idx12,6]^2)/c(est_data[idx12,5]^2))
+  log_hr_se_8 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
+                        c(est_data[idx8,3]^2)/c(est_data[idx8,2]^2)) 
+  log_hr_se_9 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
+                        c(est_data[idx9,3]^2)/c(est_data[idx9,2]^2)) 
+  log_hr_se_10 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
+                         c(est_data[idx10,3]^2)/c(est_data[idx10,2]^2)) 
+  log_hr_se_11 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
+                         c(est_data[idx11,3]^2)/c(est_data[idx11,2]^2)) 
+  log_hr_se_12 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
+                         c(est_data[idx12,3]^2)/c(est_data[idx12,2]^2))
   
   hr_tmp <- data.frame(estimate = c(hr_tmp_8, hr_tmp_9, hr_tmp_10, hr_tmp_11, hr_tmp_12),
                        lower = c(exp(log(hr_tmp_8) - 1.96*log_hr_se_8), 
@@ -286,7 +286,7 @@ hr$dual_label <- ifelse(hr$dual == "high", "High SEP", ifelse(hr$dual == "low", 
 hr$dual_label <- factor(hr$dual_label, levels = c("All", "High SEP", "Low SEP"))
 hr$race_title <- str_to_title(hr$race)
 
-hr_tmp <- subset(hr, race %in% c("all", "black", "white") & pm0 == 12)
+hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
 
 hr_strata <- hr_tmp %>%
   ggplot(aes(x = pm1, y = estimate, color = factor(race_title))) +
@@ -299,7 +299,7 @@ hr_strata <- hr_tmp %>%
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Hazard Ratio", color = "Race") +
   theme_bw() +
   theme(legend.position = "bottom") +
-  scale_color_manual(values = c("#000000", "#367E18", "#F57328")) +
+  scale_color_manual(values = c("#367E18", "#F57328")) +
   scale_y_continuous(breaks = c(0.85,0.86,0.87,0.88,0.89,0.9,0.91,0.92,0.93,
                                 0.94,0.95,0.96,0.97,0.98,0.99,1,1.01,1.02)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
@@ -314,7 +314,7 @@ ar$dual_label <- ifelse(ar$dual == "high", "High SEP", ifelse(ar$dual == "low", 
 ar$dual_label <- factor(ar$dual_label, levels = c("All", "High SEP", "Low SEP"))
 ar$race_title <- str_to_title(ar$race)
 
-ar_tmp <- subset(ar, race_title %in% c("All", "Black", "White"))
+ar_tmp <- subset(ar, race %in% c("black", "white"))
 
 ar_strata <- subset(ar_tmp, a.vals < 16 & a.vals > 4) %>%
   ggplot(aes(x = a.vals, y = estimate, color = factor(race_title))) +
@@ -325,7 +325,7 @@ ar_strata <- subset(ar_tmp, a.vals < 16 & a.vals > 4) %>%
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Absolute Mortality Rate", color = "Race") +
   theme_bw() +
   theme(legend.position = "bottom") +
-  scale_color_manual(values = c("#000000", "#367E18", "#F57328")) +
+  scale_color_manual(values = c("#367E18", "#F57328")) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
 pdf(file = "~/Figures/ar_strata.pdf", width = 16, height = 8)

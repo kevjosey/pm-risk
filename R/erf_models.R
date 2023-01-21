@@ -26,6 +26,7 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
+  # Marginalized Predictions
   mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
   mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
   
@@ -78,6 +79,66 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   
 }
 
+# count_erf where we ONLY consider lm
+count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
+                         a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
+                         bw = 1, se.fit = TRUE) {	
+  
+  # marginalize psi within zip-year
+  wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+  
+  # LM GPS
+  list.lm <- split(data.frame(resid = resid.lm, wts = exp(log.pop)), w.id)
+  resid.lm.new <- data.frame(resid = do.call(c, lapply(list.lm, function(df) sum(df$resid*df$wts)/sum(df$wts))), 
+                             wts = wts, id = names(list.lm))
+  lm.dat <- inner_join(resid.lm.new, data.frame(a = a, id = x.id), by = "id")
+  
+  # Prediction Matrix
+  mat.list <- split(cbind(exp(log.pop), muhat.mat), w.id)
+  
+  muhat.mat.new <- do.call(rbind, lapply(mat.list, function(vec) {
+    mat <- matrix(vec, ncol = length(a.vals) + 1)
+    colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
+  } ))
+  
+  mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
+  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
+  
+  if (is.null(phat.vals))
+    phat.vals <- rep(1, length(a.vals))
+  
+  # Integration Matrix
+  mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
+  phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
+  int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
+  
+  # Pseudo-Outcomes
+  psi.lm <- lm.dat$resid + mhat
+  
+  # KWLS Regression
+  out.lm <- sapply(a.vals, kern_est, psi = psi.lm, a = lm.dat$a, bw = bw,
+                   a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+  
+  if (se.fit) {
+    
+    estimate.lm <- out.lm[1,]
+    variance.lm <- out.lm[2,]
+    n.lm <- out.lm[3,]
+    
+    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, n.lm = n.lm))
+    
+  } else {
+    
+    estimate.lm <- out.lm[1,]
+    n.lm <- out.lm[2,]
+    
+    return(list(estimate.lm = out.lm, n.lm = n.lm))
+    
+  }
+  
+}
+
+# kernel estimation
 kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals = NULL, int.mat = NULL) {
   
   n <- length(a)
@@ -121,7 +182,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
 }
 
 # cross validated bandwidth
-cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.05, 1, by = 0.05)) {
+cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0.1)) {
   
   if(is.null(weights))
     weights <- rep(1, times = length(a))

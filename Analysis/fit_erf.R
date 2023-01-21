@@ -28,7 +28,7 @@ fnames <- list.files(dir_mod, full.names = FALSE)
 
 ## Run Models
 
-for (i in c(3,5,7)) {
+for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
   sname <- scen_names[i,]
@@ -69,25 +69,25 @@ for (i in c(3,5,7)) {
   rm(z_data, i_data); gc()
   
   # 10-fold CV to find bandwidth
-  # if (i == 1) {
-  # 
-  #   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-  #   list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
-  #   psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
-  #                             wts = wts, id = names(list.cal))
-  #   cal.dat <- inner_join(psi.cal.new, data.frame(a = a_x, id = x.id), by = "id")
-  #   cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),]
-  # 
-  #   bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
-  #                bw.seq = seq(0.1, 4, by = 0.1), folds = 10)
-  # 
-  #   rm(wts, list.cal, psi.cal.new, cal.dat); gc()
-  # 
-  # }
+  if (i == 1) {
+    
+    wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+    list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
+    psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
+                              wts = wts, id = names(list.cal))
+    cal.dat <- inner_join(psi.cal.new, data.frame(a = a, id = x.id), by = "id")
+    cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),] # subset for speed
+    
+    bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
+                 bw.seq = seq(0.2, 5, by = 0.2), folds = 10)
+    
+    rm(wts, list.cal, psi.cal.new, cal.dat); gc()
+    
+  }
   
   # fit exposure response curves
   target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
-                      a = a, x.id = x.id, bw = 2.5, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
+                      a = a, x.id = x.id, bw = bw, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,

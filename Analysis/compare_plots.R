@@ -10,7 +10,7 @@ load("~/Data/xiao.RData"); Kevin <- xiao
 colnames(Kevin) = colnames(DR100)
 
 DR100_table <- rbind(DR100, Kevin)
-DR100_table <- subset(DR100_table, !(Methods %in% c("LM", "Doubly Robust")))
+DR100_table <- subset(DR100_table, !(Methods %in% c("CAL", "Doubly Robust")))
 
 # standard errors
 DR100_table$SE <- (DR100_table$ERC - DR100_table$lower)/1.96
@@ -43,11 +43,11 @@ hr_compare <- ggplot(data=plot_dat, aes(x=a.vals, y = hr, color = Methods)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Hazard Ratio") +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
-                     breaks = c("CAL", "Matching")) +
+                     breaks = c("LM", "Matching")) +
   scale_y_continuous(breaks = c(0.88,0.89,0.9,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,1,1.01,1.02)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
 
-pdf(file = "~/Figures/hr_compare.pdf", width = 8, height = 8)
+pdf(file = "~/Figures/hr_compare.pdf", width = 10, height = 8)
 hr_compare
 dev.off()
 
@@ -62,11 +62,11 @@ ar_compare <- ggplot(data = plot_dat, aes(x = a.vals, y = ERC, color = Methods))
   coord_cartesian(xlim = c(5,15), ylim = c(0.044,0.052)) +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
-                     breaks = c("CAL", "Matching")) +
+                     breaks = c("LM", "Matching")) +
   scale_y_continuous(breaks = c(0.044,0.045,0.046,0.047,0.048,0.049,0.05,0.051,0.052)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
 
-pdf(file = "~/Figures/ar_compare.pdf", width = 8, height = 8)
+pdf(file = "~/Figures/ar_compare.pdf", width = 10, height = 8)
 ar_compare
 dev.off()

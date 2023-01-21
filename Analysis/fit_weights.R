@@ -27,7 +27,7 @@ a <- zip.tmp$pm25
 x.tmp <- zip.tmp[,-c(1,3)]
 x.tmp$year <- factor(x.tmp$year)
 
-## LM
+## LM GPS
 pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
 pimod.vals <- c(pimod$fitted.values)
 pimod.sd <- sigma(pimod)
@@ -48,12 +48,6 @@ phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
 phat[phat < 0] <- .Machine$double.eps
 ipw <- phat/pihat
 
-# truncation
-trunc0 <- quantile(ipw, 0.005)
-trunc1 <- quantile(ipw, 0.995)
-ipw[ipw < trunc0] <- trunc0
-ipw[ipw > trunc1] <- trunc1
-
 ## Calibration Weights
 x <- x.tmp %>% mutate_if(is.numeric, scale)
 x.mat <- model.matrix(~ ., data = data.frame(x))
@@ -63,13 +57,24 @@ mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2),
                  target = c(length(a), rep(0, ncol(x.mat) + 1)))
 cal <- mod$weights
 
+# truncation
+trunc0 <- quantile(ipw, 0.005)
+trunc1 <- quantile(ipw, 0.995)
+ipw[ipw < trunc0] <- trunc0
+ipw[ipw > trunc1] <- trunc1
+
+trunc0 <- quantile(cal, 0.005)
+trunc1 <- quantile(cal, 0.995)
+cal[cal < trunc0] <- trunc0
+cal[cal > trunc1] <- trunc1
+
 x <- cbind(zip.tmp, ipw = ipw, cal = cal)
 
 ### Create Strata Data
 
 create_strata <- function(data, x, phat.vals,
                           dual = c(0,1),
-                          race = c("white", "black", "asian", 
+                          race = c("white", "black", "asian",
                                           "hispanic", "other")) {
   
   if (dual == 0) {
