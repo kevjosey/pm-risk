@@ -151,7 +151,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   k.std <- dnorm(a.std) / bw
   g.std <- cbind(1, a.std)
   
-  b <- lm(psi ~ -1 + g.std, weights = k.std*weights)$coefficients
+  b <- lm(psi ~ a.std, weights = k.std*weights)$coefficients
   mu <- b[1]
   n.std <- sum(weights*k.std) 
   
