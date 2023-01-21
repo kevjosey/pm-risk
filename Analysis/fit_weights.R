@@ -117,9 +117,9 @@ aggregate_data$region <- factor(aggregate_data$region)
 aggregate_data$age_break <- factor(aggregate_data$age_break)
 aggregate_data$race <- factor(aggregate_data$race)
 
+x$id <- paste(x$zip, x$year, sep = "-")
 x$zip <- factor(x$zip)
 x$year <- factor(x$year)
-x$id <- factor(paste(x$zip, x$year, sep = "-"))
 
 # collate
 lapply(1:nrow(scenarios), function(i, ...) {

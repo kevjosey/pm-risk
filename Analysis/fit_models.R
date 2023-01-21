@@ -24,7 +24,7 @@ a.vals <- seq(2, 31, length.out = 146)
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New/'
 
-for (i in 61:80) {
+for (i in 1:nrow(scenarios)) {
   
   print(i)
   
@@ -44,19 +44,18 @@ for (i in 61:80) {
   
   wx.tmp <- inner_join(w.tmp, x.tmp, by = c("zip", "year"))
   
-  w.id <- wx.tmp$id
   y <- wx.tmp$dead
   a <- wx.tmp$pm25
   cal <- wx.tmp$cal
   ipw <- wx.tmp$ipw
   log.pop <- log(wx.tmp$time_count)
   
-  w <- subset(wx.tmp, select = -c(id, zip, pm25, dead, time_count,
+  w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
                                   race, dual, female, age_break, 
-                                  ipw, cal))
+                                  id, ipw, cal))
   
   model_data <- gam_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
-  individual_data <- data.frame(wx.tmp, resid.lm = model_data$resid.lm, resid.cal = model_data$resid.cal)
+  individual_data <- data.frame(wx.tmp)
   zip_data <- data.frame(x.tmp)
   
   dual_name <- ifelse(scenario$dual == 0, "high", "low")

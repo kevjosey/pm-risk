@@ -60,10 +60,11 @@ for (i in c(3,5,7)) {
   
   # summary data
   zip_data <- z_data[!duplicated(z_data$id),]
-  x.id <- zip_data$id
-  a <- zip_data$pm25
+  x.id <- as.factor(zip_data$id)
+  a <- as.numeric(zip_data$pm25)
+  
   individual_data <- i_data
-  w.id <- individual_data$id
+  w.id <- as.character(individual_data$id)
   
   rm(z_data, i_data); gc()
   
