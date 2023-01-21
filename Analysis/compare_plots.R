@@ -5,8 +5,8 @@ library(gridExtra)
 library(fst)
 library(data.table)
 
-DR100 <- read.csv("~/DR100_table.csv")[,-1]
-load("~/xiao.RData"); Kevin <- xiao
+DR100 <- read.csv("~/Data/DR100_table.csv")[,-1]
+load("~/Data/xiao.RData"); Kevin <- xiao
 colnames(Kevin) = colnames(DR100)
 
 DR100_table <- rbind(DR100, Kevin)
@@ -33,39 +33,40 @@ for (j in unique(DR100_table$Methods)) {
 }
 
 # Hazard Ratio
+# exposure response curve
 hr_compare <- ggplot(data=plot_dat, aes(x=a.vals, y = hr, color = Methods)) +
-  geom_line(aes(x = a.vals, y = hr), lwd = 1.2) +
-  geom_ribbon(aes(ymin = hr.lower, ymax = hr.upper), linetype = "dashed", alpha = 0.0, lwd = 1.2) + 
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = hr.lower, ymax = hr.upper), alpha = 0.2, linetype = "dotted") +
+  geom_hline(yintercept = 1, linetype = "dotted") +
+  theme_bw() +
+  coord_cartesian(xlim = c(5,13), ylim = c(0.88, 1.02)) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Hazard Ratio") +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
                      breaks = c("CAL", "Matching")) +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = c(0.7, 0.2)) +
-  xlab(expression(paste("PM"[2.5]," (",mu,g/m^3,")"))) +
-  ylab("Hazard Ratio") +
-  ylim(0.75, 1.1) +
-  xlim(2.76,16)
+  scale_y_continuous(breaks = c(0.88,0.89,0.9,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,1,1.01,1.02)) +
+  scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
 
-pdf(file = "~/Figures/hr_compare.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/hr_compare.pdf", width = 8, height = 8)
 hr_compare
 dev.off()
 
 # Mortality Rate
-ar_compare <- ggplot(data=plot_dat, aes(x=a.vals, y = hr, color = Methods)) +
-  geom_line(aes(x = a.vals, y = ERC), lwd = 1.2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), linetype = "dashed", alpha = 0.0, lwd = 1.2) + 
+ar_compare <- ggplot(data = plot_dat, aes(x = a.vals, y = ERC, color = Methods)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
+  theme_bw() +
+  theme(legend.position = c(0.7, 0.2),
+        legend.background = element_rect(colour = "black"),) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Mortality Rate") +
+  coord_cartesian(xlim = c(5,15), ylim = c(0.044,0.052)) +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
                      breaks = c("CAL", "Matching")) +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = c(0.7, 0.2)) +
-  xlab(expression(paste("PM"[2.5]," (",mu,g/m^3,")"))) +
-  ylab("Absolute Mortality Rate") +
-  ylim(0.04, 0.055) +
-  xlim(2.76,16)
+  scale_y_continuous(breaks = c(0.044,0.045,0.046,0.047,0.048,0.049,0.05,0.051,0.052)) +
+  scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
-pdf(file = "~/Figures/ar_compare.pdf", width = 10, height = 8)
+
+pdf(file = "~/Figures/ar_compare.pdf", width = 8, height = 8)
 ar_compare
 dev.off()

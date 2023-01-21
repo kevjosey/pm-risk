@@ -44,6 +44,7 @@ for (i in 1:nrow(scenarios)) {
   
   wx.tmp <- inner_join(w.tmp, x.tmp, by = c("zip", "year"))
   
+  w.id <- wx.tmp$id
   y <- wx.tmp$dead
   a <- wx.tmp$pm25
   cal <- wx.tmp$cal

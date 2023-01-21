@@ -23,7 +23,6 @@ zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseh
 zip.tmp <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
                       model.matrix(~ ., data = aggregate_data[,zip_cov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
 
-
 a <- zip.tmp$pm25
 x.tmp <- zip.tmp[,-c(1,3)]
 x.tmp$year <- factor(x.tmp$year)
@@ -117,9 +116,9 @@ aggregate_data$region <- factor(aggregate_data$region)
 aggregate_data$age_break <- factor(aggregate_data$age_break)
 aggregate_data$race <- factor(aggregate_data$race)
 
-x$id <- paste(x$zip, x$year, sep = "-")
 x$zip <- factor(x$zip)
 x$year <- factor(x$year)
+x$id <- paste(x$zip, x$year, sep = "-")
 
 # collate
 lapply(1:nrow(scenarios), function(i, ...) {

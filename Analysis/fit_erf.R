@@ -87,7 +87,7 @@ for (i in c(3,5,7)) {
   
   # fit exposure response curves
   target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
-                      a = a, x.id = x.id, bw = 1.3, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
+                      a = a, x.id = x.id, bw = 2.5, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
