@@ -6,7 +6,7 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   
   w <- data.frame(w)
   ybar <- y/exp(log.pop)
-  ybar[y > exp(log.pop)] <- 1 - 1e-6
+  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize

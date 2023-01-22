@@ -101,7 +101,7 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
   # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
+  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
   if (se.fit) {
@@ -128,7 +128,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   
   n <- length(a)
   
-  if(is.null(weights))
+  if (is.null(weights))
     weights <- rep(1, times = length(a))
   
   # Gaussian Kernel
@@ -169,7 +169,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
 # cross validated bandwidth
 cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0.1)) {
   
-  if(is.null(weights))
+  if (is.null(weights))
     weights <- rep(1, times = length(a))
   
   n <- length(a)
@@ -183,7 +183,7 @@ cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0
       
       preds <- sapply(a[fdx == k], kern_est, psi = psi[fdx != k], a = a[fdx != k], 
                       weights = weights[fdx != k], bw = h, se.fit = FALSE)[1,]
-      cv.vec[k] <- sqrt(weighted.mean((psi[fdx == k] - preds)^2, w = weights[fdx == k], na.rm = TRUE))
+      cv.vec[k] <- sqrt(mean((psi[fdx == k] - preds)^2, na.rm = TRUE))
       
     }
     

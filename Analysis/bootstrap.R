@@ -11,13 +11,14 @@ set.seed(42)
 
 ## bootstrap
 
-dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/'
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All_New/'
 
-load(paste0(dir_data,"aggregate_data.RData"))
 a.vals <- seq(2, 31, length.out = 146)
-boot.iter <- 100 # bootstrap iterations
+boot.iter <- 500 # bootstrap iterations
+
+# filenames
+filenames <- list.files(dir_mod, full.names = TRUE)
+fnames <- list.files(dir_mod, full.names = FALSE)
 
 # scenarios
 scenarios <- expand.grid(dual = c("", "high", "low"), race = c("", "white","black"))
@@ -25,19 +26,30 @@ scen_names <- expand.grid(dual = c("both","high", "low"), race = c("all","white"
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 
+i_data <- list()
+
+# Individual-Level data
+for (j in 1:length(filenames)) {
+  
+  print(j)
+  
+  load(filenames[j])
+  i_data[[j]] <- individual_data
+  
+}
+
+names(i_data) <- fnames
+
 # ZIP Code Data
 zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
              "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
-z_data <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
-                     model.matrix(~ ., data = aggregate_data[,zip_cov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
-z_data$id <- paste(z_data$zip, z_data$year, sep = "-")
+z_data <- zip_data
 u.zip <- unique(z_data$zip)
 
-# filenames
-filenames <- list.files(dir_mod, full.names = TRUE)
-fnames <- list.files(dir_mod, full.names = FALSE)
+rm(zip_data, individual_data, model_data, phat.vals); gc() # remove files from full fit
 
-# function for getting bootstrap data
+# function for getting cluster bootstrap data
+# need to tweak to be more general
 bootstrap_data <- function(data, index, u.zip) {
   
   n.zip <- length(u.zip)
@@ -56,7 +68,6 @@ bootstrap_data <- function(data, index, u.zip) {
       boot <- rbind(boot, cc)
     }
     
-    
   }
   
   return(boot)
@@ -69,7 +80,7 @@ for (i in 1:nrow(scenarios)) {
   scenario <- scenarios[i,]
   sname <- scen_names[i,]
   
-  boot_mat <- sapply(1:boot.iter, function(b, ...) {
+  boot_list <- mcapply(1:boot.iter, function(b, ...) {
     
     # m <- 2*sqrt(length(u.zip)) # for m out of n bootstrap 
     
@@ -112,21 +123,20 @@ for (i in 1:nrow(scenarios)) {
     
     ## Outcome Model
     
-    grep1 <- grep(scenario[1], fnames)
-    grep2 <- grep(scenario[2], fnames)
-    idx <- 1:length(filenames)
-    fn <- filenames[(idx %in% grep1) & (idx %in% grep2)]
+    grep1 <- grep(scenario[1], names(i_data))
+    grep2 <- grep(scenario[2], names(i_data))
+    idx <- 1:length(i_data)
+    fn <- which((idx %in% grep1) & (idx %in% grep2))
     
     log.pop <- muhat.mat <- resid.lm <- w.id <- NULL
     
     # Fit strata-specific outcome models
     for (j in 1:length(fn)) {
       
-      load(paste0(fn[j]))
       print(j)
       
-      w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
-      wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal, resid.lm, resid.cal)),
+      w.tmp <- bootstrap_data(data = i_data[[j]], index = index, u.zip = u.zip)
+      wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
                            data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
       
       # extract data components
@@ -154,7 +164,7 @@ for (i in 1:nrow(scenarios)) {
     a <- x$pm25
     x.id <- x$boot.id
     
-    # set bandwidth form whole data
+    # set bandwidth from whole data
     target <- count_erf_lm(resid.lm = resid.lm, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
                            a = a, x.id = x.id, bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
@@ -162,6 +172,9 @@ for (i in 1:nrow(scenarios)) {
     return(target$estimate.lm)
     
   })
+  
+  boot_mat <- do.call(rbind, boot_list)
+  colnames(boot_mat) <- a.vals
   
   # save output
   save(boot_mat, file = paste0(dir_out, sname$dual, "_", sname$race, "_boot.RData"))

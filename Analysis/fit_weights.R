@@ -24,7 +24,7 @@ zip.tmp <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
                       model.matrix(~ ., data = aggregate_data[,zip_cov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
 
 a <- zip.tmp$pm25
-x.tmp <- zip.tmp[,-c(1,3)]
+x.tmp <- subset(zip.tmp, select = -c(zip, pm25))
 x.tmp$year <- factor(x.tmp$year)
 
 ## LM GPS
