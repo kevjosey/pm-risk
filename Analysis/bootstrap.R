@@ -133,8 +133,6 @@ for (i in 1:nrow(scenarios)) {
     # Fit strata-specific outcome models
     for (j in 1:length(fn)) {
       
-      print(j)
-      
       w.tmp <- bootstrap_data(data = i_data[[j]], index = index, u.zip = u.zip)
       wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
                            data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
@@ -168,10 +166,11 @@ for (i in 1:nrow(scenarios)) {
     target <- count_erf_lm(resid.lm = resid.lm, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
                            a = a, x.id = x.id, bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
-    print(paste("Completed Scenario: ", i))
     return(target$estimate.lm)
     
   })
+  
+  print(paste("Completed Scenario: ", i))
   
   boot_mat <- do.call(rbind, boot_list)
   colnames(boot_mat) <- a.vals
