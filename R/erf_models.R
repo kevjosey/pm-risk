@@ -32,10 +32,10 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
   # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
+  out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
-  out.cal <- sapply(a.vals, kern_est, psi = resid$psi.cal, a = resid.dat$a, bw = bw,
+  out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
   # Linear Model Approximations
@@ -101,7 +101,7 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
   # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
+  out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
   if (se.fit) {
