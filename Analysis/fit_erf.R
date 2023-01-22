@@ -91,7 +91,7 @@ for (i in 1:nrow(scenarios)) {
     resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
     
     bw <<- cv_bw(a = resid.dat$a, psi = resid.dat$psi.lm,
-                 bw.seq = seq(0.2, 10, by = 0.2), folds = 10)
+                 bw.seq = seq(0.2, 5, by = 0.2), folds = 10)
     
     rm(wts, mat.list, agg, agg.new, resid.dat); gc()
     
