@@ -72,16 +72,16 @@ for (i in 1:nrow(scenarios)) {
   if (i == 1) {
     
     wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-    list.cal <- split(data.frame(psi = psi.cal, wts = exp(log.pop)) , w.id)
-    psi.cal.new <- data.frame(psi = do.call(c, lapply(list.cal, function(df) sum(df$psi*df$wts)/sum(df$wts))),
-                              wts = wts, id = names(list.cal))
-    cal.dat <- inner_join(psi.cal.new, data.frame(a = a, id = x.id), by = "id")
-    cal.dat <- cal.dat[sample(1:nrow(cal.dat), 10000, replace = FALSE),] # subset for speed
+    list.lm <- split(data.frame(psi = psi.lm, wts = exp(log.pop)) , w.id)
+    psi.lm.new <- data.frame(psi = do.call(c, lapply(list.lm, function(df) sum(df$psi*df$wts)/sum(df$wts))),
+                              wts = wts, id = names(list.lm))
+    lm.dat <- inner_join(psi.lm.new, data.frame(a = a, id = x.id), by = "id")
+    lm.dat <- lm.dat[sample(1:nrow(lm.dat), 10000, replace = FALSE),] # subset for speed
     
-    bw <<- cv_bw(a = cal.dat$a, psi = cal.dat$psi, weights = cal.dat$wts,
+    bw <<- cv_bw(a = lm.dat$a, psi = lm.dat$psi, weights = lm.dat$wts,
                  bw.seq = seq(0.2, 5, by = 0.2), folds = 10)
     
-    rm(wts, list.cal, psi.cal.new, cal.dat); gc()
+    rm(wts, list.lm, psi.lm.new, lm.dat); gc()
     
   }
   
