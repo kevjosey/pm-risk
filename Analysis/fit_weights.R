@@ -74,7 +74,7 @@ x <- cbind(zip.tmp, ipw = ipw, cal = cal)
 
 create_strata <- function(data, x, phat.vals,
                           dual = c(0,1),
-                          race = c("white", "black", "asian",
+                          race = c("white", "black", "asian", 
                                           "hispanic", "other")) {
   
   if (dual == 0) {

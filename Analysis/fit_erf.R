@@ -72,16 +72,28 @@ for (i in 1:nrow(scenarios)) {
   if (i == 1) {
     
     wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-    list.lm <- split(data.frame(psi = psi.lm, wts = exp(log.pop)) , w.id)
-    psi.lm.new <- data.frame(psi = do.call(c, lapply(list.lm, function(df) sum(df$psi*df$wts)/sum(df$wts))),
-                              wts = wts, id = names(list.lm))
-    lm.dat <- inner_join(psi.lm.new, data.frame(a = a, id = x.id), by = "id")
-    lm.dat <- lm.dat[sample(1:nrow(lm.dat), 10000, replace = FALSE),] # subset for speed
+    mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
     
-    bw <<- cv_bw(a = lm.dat$a, psi = lm.dat$psi, weights = lm.dat$wts,
-                 bw.seq = seq(0.2, 5, by = 0.2), folds = 10)
+    # Aggregate by ZIP-code-year
+    agg <- do.call(rbind, lapply(mat.list, function(vec) {
+      mat <- matrix(vec, ncol = length(a.vals) + 2)
+      colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
+    } ))
     
-    rm(wts, list.lm, psi.lm.new, lm.dat); gc()
+    agg.new <- data.frame(wts = wts, id = names(mat.list), agg)
+    mhat.vals <- colMeans(agg.new[,-c(1:3)], na.rm = TRUE)
+    resid.dat <- inner_join(agg.new[,1:3], data.frame(a = a, id = x.id), by = "id")
+    
+    resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
+    resid.dat <- resid.dat[sample(1:nrow(resid.dat), 10000, replace = FALSE),] # subset for speed
+    
+    # Pseudo-Outcome
+    resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
+    
+    bw <<- cv_bw(a = resid.dat$a, psi = resid.dat$psi.lm,
+                 bw.seq = seq(0.2, 10, by = 0.2), folds = 10)
+    
+    rm(wts, mat.list, agg, agg.new, resid.dat); gc()
     
   }
   

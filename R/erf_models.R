@@ -3,32 +3,25 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
                       a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
                       bw = 1, se.fit = TRUE) {	
   
-  # marginalize psi within zip-year
+  # marginalize values within zip-year
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+  mat.list <- split(cbind(exp(log.pop), resid.lm, resid.cal, muhat.mat), w.id)
   
-  # LM GPS
-  list.lm <- split(data.frame(resid = resid.lm, wts = exp(log.pop)), w.id)
-  resid.lm.new <- data.frame(resid = do.call(c, lapply(list.lm, function(df) sum(df$resid*df$wts)/sum(df$wts))), 
-                             wts = wts, id = names(list.lm))
-  lm.dat <- inner_join(resid.lm.new, data.frame(a = a, id = x.id), by = "id")
-  
-  # Calibration Weights
-  list.cal <- split(data.frame(resid = resid.cal, wts = exp(log.pop)) , w.id)
-  resid.cal.new <- data.frame(resid = do.call(c, lapply(list.cal, function(df) sum(df$resid*df$wts)/sum(df$wts))), 
-                              wts = wts, id = names(list.cal))
-  cal.dat <- inner_join(resid.cal.new, data.frame(a = a, id = x.id), by = "id")
-  
-  # Prediction Matrix
-  mat.list <- split(cbind(exp(log.pop), muhat.mat), w.id)
-  
-  muhat.mat.new <- do.call(rbind, lapply(mat.list, function(vec) {
-    mat <- matrix(vec, ncol = length(a.vals) + 1)
+  # Aggregate by ZIP-code-year
+  mat <- do.call(rbind, lapply(mat.list, function(vec) {
+    mat <- matrix(vec, ncol = length(a.vals) + 3)
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  # Marginalized Predictions
+  mat.new <- data.frame(wts = wts, id = names(mat.list), mat)
+  muhat.mat.new <- mat.new[,-c(1:4)]
   mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
-  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
+  resid.dat <- inner_join(mat.new[,1:4], data.frame(a = a, id = x.id), by = "id")
+  resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
+  
+  # Pseudo-Outcomes
+  resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
+  resid.dat$psi.cal <- with(resid.dat, X2 + mhat)
   
   if (is.null(phat.vals))
     phat.vals <- rep(1, length(a.vals))
@@ -38,20 +31,16 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
-  # Pseudo-Outcomes
-  psi.lm <- lm.dat$resid + mhat
-  psi.cal <- cal.dat$resid + mhat
-  
   # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = psi.lm, a = lm.dat$a, bw = bw,
+  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
-  out.cal <- sapply(a.vals, kern_est, psi = psi.cal, a = cal.dat$a, bw = bw,
+  out.cal <- sapply(a.vals, kern_est, psi = resid$psi.cal, a = resid.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
   # Linear Model Approximations
-  fit.lm <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.lm, lm.dat))
-  fit.cal <- lm(psi ~ a, weights = wts, data = data.frame(psi = psi.cal, cal.dat))
+  fit.lm <- lm(psi.lm ~ a, weights = wts, data = resid.dat)
+  fit.cal <- lm(psi.cal ~ a, weights = wts, data = resid.dat)
   
   if (se.fit) {
     
@@ -84,25 +73,24 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
                          a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
                          bw = 1, se.fit = TRUE) {	
   
-  # marginalize psi within zip-year
-  wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-  
-  # LM GPS
-  list.lm <- split(data.frame(resid = resid.lm, wts = exp(log.pop)), w.id)
-  resid.lm.new <- data.frame(resid = do.call(c, lapply(list.lm, function(df) sum(df$resid*df$wts)/sum(df$wts))), 
-                             wts = wts, id = names(list.lm))
-  lm.dat <- inner_join(resid.lm.new, data.frame(a = a, id = x.id), by = "id")
-  
   # Prediction Matrix
-  mat.list <- split(cbind(exp(log.pop), muhat.mat), w.id)
+  wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
+  mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
   
-  muhat.mat.new <- do.call(rbind, lapply(mat.list, function(vec) {
-    mat <- matrix(vec, ncol = length(a.vals) + 1)
+  # Aggregate by ZIP-code-year
+  mat <- do.call(rbind, lapply(mat.list, function(vec) {
+    mat <- matrix(vec, ncol = length(a.vals) + 2)
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
+  mat.new <- data.frame(wts = wts, id = names(mat.list), mat)
+  muhat.mat.new <- mat.new[,-c(1:3)]
   mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
-  mhat <- predict(smooth.spline(a.vals, mhat.vals), x = cal.dat$a)$y
+  resid.dat <- inner_join(mat.new[,1:3], data.frame(a = a, id = x.id), by = "id")
+  resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
+  
+  # Pseudo-Outcomes
+  resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
   
   if (is.null(phat.vals))
     phat.vals <- rep(1, length(a.vals))
@@ -112,11 +100,8 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
-  # Pseudo-Outcomes
-  psi.lm <- lm.dat$resid + mhat
-  
   # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = psi.lm, a = lm.dat$a, bw = bw,
+  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
   if (se.fit) {
@@ -198,7 +183,7 @@ cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0
       
       preds <- sapply(a[fdx == k], kern_est, psi = psi[fdx != k], a = a[fdx != k], 
                       weights = weights[fdx != k], bw = h, se.fit = FALSE)[1,]
-      cv.vec[k] <- weighted.mean(abs(psi[fdx == k] - preds), w = weights[fdx == k], na.rm = TRUE)
+      cv.vec[k] <- sqrt(weighted.mean((psi[fdx == k] - preds)^2, w = weights[fdx == k], na.rm = TRUE))
       
     }
     

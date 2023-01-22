@@ -167,4 +167,3 @@ for (i in 1:nrow(scenarios)) {
   save(boot_mat, file = paste0(dir_out, sname$dual, "_", sname$race, "_boot.RData"))
   
 }
-
