@@ -67,7 +67,7 @@ for (i in 1:nrow(scenarios)) {
   individual_data <- data.frame(wx.tmp)
   zip_data <- data.frame(x.tmp)
   
-  dual_name <- ifelse(scenario$dual == 0, "high", ifelse(scenarios$dual == 1, "low", "both"))
+  dual_name <- ifelse(scenario$dual == 0, "high", ifelse(scenario$dual == 1, "low", "both"))
   
   print(paste0("Fit Complete: Scenario ", i))
   

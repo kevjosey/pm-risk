@@ -28,7 +28,7 @@ scenarios$race <- as.character(scenarios$race)
 i_data <- list()
 
 # Individual-Level data
-for (j in 1:length(filenames)) {
+for (j in 1:nrow(scenarios)) {
   
   print(j)
   scenario <- scenarios[j,]
@@ -78,7 +78,6 @@ bootstrap_data <- function(data, index, u.zip) {
 for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
-  sname <- scen_names[i,]
   
   boot_list <- mcapply(1:boot.iter, function(b, ...) {
     
