@@ -1,5 +1,5 @@
 # estimate gam outcome model and combine with BOTH lm and calibrated weights
-gnm_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, ...) {
+gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, ...) {
   
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
@@ -16,9 +16,9 @@ gnm_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   
   # GNM
-  gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-      eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
-      weights = exp(log.pop))
+  mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
+               eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+               weights = exp(log.pop))
   
   muhat <- mumod$fitted.values
   
@@ -41,7 +41,7 @@ gnm_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
 }
 
 # estimate gam and combine ONLY with LM
-gnm_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ...) {
+gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ...) {
   
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
@@ -59,9 +59,11 @@ gnm_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ..
   #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   
   # GNM
-  gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-      eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
-      weights = exp(log.pop))
+  mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
+               eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+               weights = exp(log.pop))
+  
+  muhat <- mumod$fitted.values
   
   # predictions along a.vals
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
