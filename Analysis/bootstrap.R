@@ -124,37 +124,37 @@ for (i in 1:nrow(scenarios)) {
     
     # Fit subgroup-specific outcome models
     w.tmp <- bootstrap_data(data = i_data[[i]], index = index, u.zip = u.zip)
-    wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
-                         data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
+    wx <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
+                     data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
     
     # factor strata variables
-    wx.tmp$year <- factor(wx.tmp$year)
-    wx.tmp$age_break <- factor(wx.tmp$age_break)
-    wx.tmp$followup_year <- factor(wx.tmp$followup_year)
+    wx$year <- factor(wx$year)
+    wx$age_break <- factor(wx$age_break)
+    wx$followup_year <- factor(wx$followup_year)
     
     # remove collinear terms and identifiers
     if (scenario$dual == 2 & scenario$race == "all") {
-      wx.tmp$race <- factor(wx.tmp$race)
-      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
+      wx$race <- factor(wx$race)
+      w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
     } else if (scenario$dual == 2 & scenario$race != "all") {
-      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                      race, id, boot.id, ipw))
+      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
+                                  race, id, boot.id, ipw))
     } else if (scenario$dual != 2 & scenario$race == "all") {
-      wx.tmp$race <- factor(wx.tmp$race)
-      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                      dual, id, boot.id, ipw))
+      wx$race <- factor(wx$race)
+      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
+                                  dual, id, boot.id, ipw))
     } else if (scenario$dual != 2 & scenario$race != "all") {
-      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                      dual, race, id, boot.id, ipw))
+      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
+                                  dual, race, id, boot.id, ipw))
     }
     
-    model_data <- gam_models_lm(y = wx.tmp$dead, a = wx.tmp$pm25, 
-                                w = w, log.pop = log(wx.tmp$time_count), 
-                                ipw = wx.tmp$ipw, a.vals = a.vals)
+    model_data <- gam_models_lm(y = wx$dead, a = wx$pm25, w = w,
+                                log.pop = log(wx$time_count), 
+                                ipw = wx$ipw, a.vals = a.vals)
     
     # set bandwidth from whole data
     target <- count_erf_lm(resid.lm = model_data$resid.lm, muhat.mat = model_data$muhat.mat,
-                           log.pop = model_data$log.pop, w.id = wx.tmp$boot.id, a = x$pm25, x.id = x$id,
+                           log.pop = model_data$log.pop, w.id = wx$boot.id, a = x$pm25, x.id = x$boot.id,
                            bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
     print(paste("Completed Scenario: ", i))
