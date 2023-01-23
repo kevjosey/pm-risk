@@ -66,7 +66,8 @@ confounders <- new_data[,c(1,2,4,6,12:27,29,30)]
 
 rm(national_merged2016, new_data); gc()
 
-aggregate_data <- merge(dead_personyear, confounders, by = c("zip","year","female","race","dual","age_break"))
+aggregate_data <- merge(dead_personyear, confounders,
+                        by = c("zip","year","female","race","dual","age_break","followup_year"))
 aggregate_data <- aggregate_data[complete.cases(aggregate_data),]
 
 save(aggregate_data, file = "/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/aggregate_data.RData")
