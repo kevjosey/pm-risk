@@ -38,11 +38,11 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
-  # Spline sensitivity
+  # Spline Regression Sensitivity
   spl.lm <- predict(lm(psi.lm ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
   spl.cal <- predict(lm(psi.cal ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
   
-  # Linear Model Approximations
+  # Least Squares Approximations
   fit.lm <- lm(psi.lm ~ a, weights = wts, data = resid.dat)
   fit.cal <- lm(psi.cal ~ a, weights = wts, data = resid.dat)
   

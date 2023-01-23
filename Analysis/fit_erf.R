@@ -12,10 +12,8 @@ set.seed(42)
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(dual = c("", "high", "low"), race = c("", "white","black"))
-scen_names <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))
+scenarios <- expand.grid(dual = c("both", "high", "low"), race = c("all", "white","black"))
 # scenarios <- expand.grid(dual = c("high", "low"), race = c("asian","hispanic", "other"))
-# scen_names <- expand.grid(dual = c("high", "low"), race = c("asian","hispanic","other"))
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
@@ -29,51 +27,18 @@ fnames <- list.files(dir_mod, full.names = FALSE)
 
 ## Run Models
 
-for (i in c(1,6,8)) {
+for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
-  sname <- scen_names[i,]
-  
-  grep1 <- grep(scenario[1], fnames)
-  grep2 <- grep(scenario[2], fnames)
-  idx <- 1:length(filenames)
-  
-  fn <- filenames[(idx %in% grep1) & (idx %in% grep2)]
-  
-  w.id <- log.pop <- NULL
-  resid.lm <- resid.cal <- muhat.mat <- NULL
-  i_data <- z_data <- NULL
-  
-  for (j in 1:length(fn)) {
-    
-    load(paste0(fn[j]))
-    print(j)
-    
-    log.pop <- c(log.pop, model_data$log.pop)
-    muhat.mat <- rbind(muhat.mat, model_data$muhat.mat)
-    resid.lm <- c(resid.lm, model_data$resid.lm)
-    resid.cal <- c(resid.cal, model_data$resid.cal)
-    
-    i_data <- rbind(i_data, individual_data)
-    z_data <- rbind(z_data, zip_data)
-    
-  }
-  
-  # summary data
-  zip_data <- z_data[!duplicated(z_data$id),]
-  x.id <- as.factor(zip_data$id)
-  a <- as.numeric(zip_data$pm25)
-  
-  individual_data <- i_data
-  w.id <- as.character(individual_data$id)
-  
-  rm(z_data, i_data); gc()
+  load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
   
   # 10-fold CV to find bandwidth
   if (i == 1) {
     
-    wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-    mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
+    wts <- do.call(c, lapply(split(exp(model_data$log.pop), 
+                                   individual_data$id), sum))
+    mat.list <- split(cbind(exp(log.pop), model_data$resid.lm, 
+                            model_data$muhat.mat), individual_data$id)
     
     # Aggregate by ZIP-code-year
     agg <- do.call(rbind, lapply(mat.list, function(vec) {
@@ -83,7 +48,7 @@ for (i in c(1,6,8)) {
     
     agg.new <- data.frame(wts = wts, id = names(mat.list), agg)
     mhat.vals <- colMeans(agg.new[,-c(1:3)], na.rm = TRUE)
-    resid.dat <- inner_join(agg.new[,1:3], data.frame(a = a, id = x.id), by = "id")
+    resid.dat <- inner_join(agg.new[,1:3], data.frame(a = zip_data$pm25, id = zip_data$id), by = "id")
     resid.dat <- resid.dat[sample(1:nrow(resid.dat), 10000, replace = FALSE),] # subset for speed
     
     resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
@@ -99,8 +64,10 @@ for (i in c(1,6,8)) {
   }
   
   # fit exposure response curves
-  target <- count_erf(resid.lm = resid.lm, resid.cal = resid.cal, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
-                      a = a, x.id = x.id, bw = bw, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
+  target <- count_erf(resid.lm = model_data$resid.lm, resid.cal = model_data$resid.cal, 
+                      muhat.mat = model_data$muhat.mat, log.pop = model_data$log.pop,
+                      w.id = individual_data$w.id, a = zip_data$pm25, x.id = zip_data$id, 
+                      bw = bw, a.vals = a.vals, phat.vals = phat.vals, se.fit = TRUE)
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
@@ -114,7 +81,7 @@ for (i in c(1,6,8)) {
   
   print(paste0("Fit Complete: Scenario ", i))
   save(individual_data, zip_data, est_data, extra,
-       file = paste0(dir_out, sname$dual, "_", sname$race, ".RData"))
+       file = paste0(dir_out, scenario$dual, "_", scenario$race, ".RData"))
   
   rm(individual_data, zip_data, model_data, est_data, target, extra, muhat.mat); gc()
   

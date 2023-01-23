@@ -73,14 +73,16 @@ x <- cbind(zip.tmp, ipw = ipw, cal = cal)
 ### Create Strata Data
 
 create_strata <- function(data, x, phat.vals,
-                          dual = c(0,1),
+                          dual = c(0,1,2),
                           race = c("white", "black", "asian", 
-                                          "hispanic", "other")) {
+                                          "hispanic", "other","all")) {
   
   if (dual == 0) {
     dual0 <- 0
   } else if (dual == 1) {
     dual0 <- 1
+  } else if (dual == 2) {
+    dual0 <- c(0,1)
   }
   
   if (race == "white") {
@@ -93,6 +95,8 @@ create_strata <- function(data, x, phat.vals,
     race0 <- 5
   } else if (race == "other") {
     race0 <- 3
+  } else if (race == "all") {
+    race0 <- c(1,2,3,4,5)
   }
   
   sub_data <- subset(data, race %in% race0 & dual %in% dual0)
@@ -108,7 +112,7 @@ create_strata <- function(data, x, phat.vals,
 }
 
 # scenarios
-scenarios <- expand.grid(dual = c(0, 1), race = c("white", "black", "asian", "hispanic", "other"))
+scenarios <- expand.grid(dual = c(0, 1, 2), race = c("white", "black", "asian", "hispanic", "other","all"))
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 

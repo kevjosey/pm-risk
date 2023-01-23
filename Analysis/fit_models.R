@@ -2,9 +2,7 @@ library(parallel)
 library(data.table)
 library(tidyr)
 library(dplyr)
-library(splines)
-library(gnm)
-# library(gam)
+library(gam)
 
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
@@ -14,7 +12,7 @@ set.seed(42)
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(race = c("white","black", "asian", "hispanic", "other"), dual = c(0, 1))
+scenarios <- expand.grid(race = c("white", "black", "all"), dual = c(0, 1, 2))
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
@@ -24,8 +22,6 @@ dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New/'
 
 for (i in 1:nrow(scenarios)) {
-  
-  print(i)
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
@@ -45,20 +41,35 @@ for (i in 1:nrow(scenarios)) {
   ipw <- wx.tmp$ipw
   log.pop <- log(wx.tmp$time_count)
   
-  wx.tmp$year <- factor(wx.tmp$year)
-  wx.tmp$age_break <- factor(wx.tmp$age_break)
-  wx.tmp$followup_year <- factor(wx.tmp$followup_year)
+  # factor variables
+  wx.tmp$year <- as.factor(wx.tmp$year)
+  wx.tmp$age_break <- as.factor(wx.tmp$age_break)
+  wx.tmp$followup_year <- as.factor(wx.tmp$followup_year)
   
-  # remove identifiers
-  w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                  race, dual, id, ipw, cal))
+  # remove collinear terms and identifiers
+  if (scenario$dual == 2 & scenario$race == "all") {
+    wx.tmp$race <- factor(wx.tmp$race)
+    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, id, ipw, cal))
+  } else if (scenario$dual == 2 & scenario$race != "all") {
+    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                    race, id, ipw, cal))
+  } else if (scenario$dual != 2 & scenario$race == "all") {
+    wx.tmp$race <- factor(wx.tmp$race)
+    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                    dual, id, ipw, cal))
+  } else if (scenario$dual != 2 & scenario$race != "all") {
+    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                    dual, race, id, ipw, cal))
+  }
   
-  # fit gnm outcome model
-  model_data <- gnm_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
+  # fit gam outcome model
+  model_data <- gam_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
   individual_data <- data.frame(wx.tmp)
   zip_data <- data.frame(x.tmp)
   
-  dual_name <- ifelse(scenario$dual == 0, "high", "low")
+  dual_name <- ifelse(scenario$dual == 0, "high", ifelse(scenarios$dual == 1, "low", "both"))
+  
+  print(paste0("Fit Complete: Scenario ", i))
   
   # save data
   save(model_data, individual_data, zip_data, phat.vals,

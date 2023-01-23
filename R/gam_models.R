@@ -10,18 +10,9 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  
-  # GAM
-  # mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
-  #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
-  
-  # GNM
-  mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-               eliminate = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
-               weights = exp(log.pop))
-  
+  mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
-  
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
     
     wa.tmp <- data.frame(a = a.tmp, w)
@@ -53,16 +44,8 @@ gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ..
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  
-  # GAM
-  # mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
-  #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
-  
-  # GNM
-  mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-               eliminate = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
-               weights = exp(log.pop))
-  
+  mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   
   # predictions along a.vals

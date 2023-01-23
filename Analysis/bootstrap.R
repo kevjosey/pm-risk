@@ -9,7 +9,7 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
-## bootstrap
+### bootstrap
 
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New'
 
@@ -21,8 +21,7 @@ filenames <- list.files(dir_mod, full.names = TRUE)
 fnames <- list.files(dir_mod, full.names = FALSE)
 
 # scenarios
-scenarios <- expand.grid(dual = c("", "high", "low"), race = c("", "white","black"))
-scen_names <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))
+scenarios <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))[-(2:3),]
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 
@@ -32,13 +31,14 @@ i_data <- list()
 for (j in 1:length(filenames)) {
   
   print(j)
+  scenario <- scenarios[j,]
   
-  load(filenames[j])
+  load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
   i_data[[j]] <- individual_data
   
 }
 
-names(i_data) <- fnames
+names(i_data) <- paste0(scenarios$dual, "_", scenarios$race)
 
 # ZIP Code Data
 zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
@@ -93,7 +93,7 @@ for (i in 1:nrow(scenarios)) {
     
     ## GPS Model
     
-    # fit models
+    # fit GPS model
     pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
     pimod.vals <- c(pimod$fitted.values)
     pimod.sd <- sigma(pimod)
@@ -123,53 +123,40 @@ for (i in 1:nrow(scenarios)) {
     
     ## Outcome Model
     
-    grep1 <- grep(scenario[1], names(i_data))
-    grep2 <- grep(scenario[2], names(i_data))
-    idx <- 1:length(i_data)
-    fn <- which((idx %in% grep1) & (idx %in% grep2))
+    # Fit subgroup-specific outcome models
+    w.tmp <- bootstrap_data(data = i_data[[i]], index = index, u.zip = u.zip)
+    wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
+                         data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
     
-    log.pop <- muhat.mat <- resid.lm <- w.id <- NULL
+    # factor strata variables
+    wx.tmp$year <- factor(wx.tmp$year)
+    wx.tmp$age_break <- factor(wx.tmp$age_break)
+    wx.tmp$followup_year <- factor(wx.tmp$followup_year)
     
-    # Fit strata-specific outcome models
-    for (j in 1:length(fn)) {
-      
-      print(j)
-      
-      w.tmp <- bootstrap_data(data = i_data[[j]], index = index, u.zip = u.zip)
-      wx.tmp <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
-                           data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
-      
-      # extract data components
-      y <- wx.tmp$dead
-      a <- wx.tmp$pm25
-      ipw <- wx.tmp$ipw
-      id <- wx.tmp$boot.id
-      log.pop <- log(wx.tmp$time_count)
-      
-      wx.tmp$year <- factor(wx.tmp$year)
-      wx.tmp$age_break <- factor(wx.tmp$age_break)
-      wx.tmp$followup_year <- factor(wx.tmp$followup_year)
-      
-      # remove identifiers
+    # remove collinear terms and identifiers
+    if (scenario$dual == 2 & scenario$race == "all") {
+      wx.tmp$race <- factor(wx.tmp$race)
+      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
+    } else if (scenario$dual == 2 & scenario$race != "all") {
       w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                      race, dual, boot.id, id, ipw))
-      
-      model_data <- gam_models_lm(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, a.vals = a.vals)
-      
-      # concatenate
-      log.pop <- c(log.pop, model_data$log.pop)
-      muhat.mat <- rbind(muhat.mat, model_data$muhat.mat)
-      resid.lm <- c(resid.lm, model_data$resid.lm)
-      w.id <- c(w.id, id)
-      
+                                      race, id, boot.id, ipw))
+    } else if (scenario$dual != 2 & scenario$race == "all") {
+      wx.tmp$race <- factor(wx.tmp$race)
+      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                      dual, id, boot.id, ipw))
+    } else if (scenario$dual != 2 & scenario$race != "all") {
+      w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                      dual, race, id, boot.id, ipw))
     }
     
-    a <- x$pm25
-    x.id <- x$boot.id
+    model_data <- gam_models_lm(y = wx.tmp$dead, a = wx.tmp$pm25, 
+                                w = w, log.pop = log(wx.tmp$time_count), 
+                                ipw = wx.tmp$ipw, a.vals = a.vals)
     
     # set bandwidth from whole data
-    target <- count_erf_lm(resid.lm = resid.lm, muhat.mat = muhat.mat, log.pop = log.pop, w.id = w.id, 
-                           a = a, x.id = x.id, bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
+    target <- count_erf_lm(resid.lm = model_data$resid.lm, muhat.mat = model_data$muhat.mat,
+                           log.pop = model_data$log.pop, w.id = wx.tmp$boot.id, a = x$pm25, x.id = x$id,
+                           bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
     print(paste("Completed Scenario: ", i))
     return(target$estimate.lm)
@@ -180,7 +167,7 @@ for (i in 1:nrow(scenarios)) {
   colnames(boot_mat) <- a.vals
   
   # save output
-  save(boot_mat, file = paste0(dir_out, sname$dual, "_", sname$race, "_boot.RData"))
+  save(boot_mat, file = paste0(dir_out, scenario$dual, "_", scenario$race, "_boot.RData"))
   rm(model_data, target, muhat.mat); gc()
   
 }
