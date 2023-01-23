@@ -116,4 +116,6 @@ for (i in c(1,6,8)) {
   save(individual_data, zip_data, est_data, extra,
        file = paste0(dir_out, sname$dual, "_", sname$race, ".RData"))
   
+  rm(individual_data, zip_data, model_data, est_data, target, extra, muhat.mat); gc()
+  
 }
