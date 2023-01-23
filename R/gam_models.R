@@ -17,7 +17,7 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   
   # GNM
   mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-               eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+               eliminate = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
                weights = exp(log.pop))
   
   muhat <- mumod$fitted.values
@@ -60,7 +60,7 @@ gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ..
   
   # GNM
   mumod <- gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
-               eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+               eliminate = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
                weights = exp(log.pop))
   
   muhat <- mumod$fitted.values
