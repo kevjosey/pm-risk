@@ -2,6 +2,7 @@ library(parallel)
 library(data.table)
 library(tidyr)
 library(dplyr)
+library(splines)
 
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
@@ -28,7 +29,7 @@ fnames <- list.files(dir_mod, full.names = FALSE)
 
 ## Run Models
 
-for (i in 1:nrow(scenarios)) {
+for (i in c(1,6,8)) {
   
   scenario <- scenarios[i,]
   sname <- scen_names[i,]
@@ -83,9 +84,9 @@ for (i in 1:nrow(scenarios)) {
     agg.new <- data.frame(wts = wts, id = names(mat.list), agg)
     mhat.vals <- colMeans(agg.new[,-c(1:3)], na.rm = TRUE)
     resid.dat <- inner_join(agg.new[,1:3], data.frame(a = a, id = x.id), by = "id")
+    resid.dat <- resid.dat[sample(1:nrow(resid.dat), 10000, replace = FALSE),] # subset for speed
     
     resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
-    resid.dat <- resid.dat[sample(1:nrow(resid.dat), 10000, replace = FALSE),] # subset for speed
     
     # Pseudo-Outcome
     resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
@@ -103,7 +104,8 @@ for (i in 1:nrow(scenarios)) {
   
   est_data <- data.frame(a.vals = a.vals,
                          estimate.lm = target$estimate.lm, se.lm = sqrt(target$variance.lm), n.lm = target$n.lm,
-                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal), n.cal = target$n.cal)
+                         estimate.cal = target$estimate.cal, se.cal = sqrt(target$variance.cal), n.cal = target$n.cal,
+                         spl.lm = target$spl.lm, spl.cal = target$spl.cal)
   
   extra <- list(lm.coef = target$fit.lm$coefficients,
                 cal.coef = target$fit.cal$coefficients,

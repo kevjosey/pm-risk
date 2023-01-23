@@ -100,8 +100,8 @@ create_strata <- function(data, x, phat.vals,
   # Covariates and Outcomes
   w <- data.table(zip = sub_data$zip, year = sub_data$year, race = sub_data$race,
                   female = sub_data$female, dual = sub_data$dual, age_break = sub_data$age_break,
-                  dead = sub_data$dead, time_count = sub_data$time_count)[
-                    ,lapply(.SD, sum), by = c("zip", "year", "race", "female", "dual", "age_break")]
+                  followup_year = sub_data$followup_year, dead = sub_data$dead, time_count = sub_data$time_count)[
+                    ,lapply(.SD, sum), by = c("zip", "year", "race", "female", "dual", "age_break", "followup_year")]
   
   return(list(w = w, x = x, phat.vals = phat.vals))
   
@@ -113,13 +113,14 @@ scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 
 # format variables
+aggregate_data$region <- factor(aggregate_data$region)
 aggregate_data$zip <- factor(aggregate_data$zip)
 aggregate_data$year <- factor(aggregate_data$year)
 aggregate_data$female <- as.numeric(aggregate_data$female)
-aggregate_data$dual <- as.numeric(aggregate_data$dual)
-aggregate_data$region <- factor(aggregate_data$region)
-aggregate_data$age_break <- factor(aggregate_data$age_break)
 aggregate_data$race <- factor(aggregate_data$race)
+aggregate_data$dual <- as.numeric(aggregate_data$dual)
+aggregate_data$age_break <- factor(aggregate_data$age_break)
+aggregate_data$followup_year <- factor(aggregate_data$followup_year)
 
 x$zip <- factor(x$zip)
 x$year <- factor(x$year)

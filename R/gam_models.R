@@ -1,5 +1,5 @@
 # estimate gam outcome model and combine with BOTH lm and calibrated weights
-gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, ...) {
+gnm_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, ...) {
   
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
@@ -10,8 +10,16 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  mumod <- gam(ybar ~ s(a, 5) + . - a + a:(regionWEST + regionNORTHEAST + regionSOUTH), weights = exp(log.pop),
-               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
+  
+  # GAM
+  # mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+  #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
+  
+  # GNM
+  gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
+      eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+      weights = exp(log.pop))
+  
   muhat <- mumod$fitted.values
   
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
@@ -33,7 +41,7 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
 }
 
 # estimate gam and combine ONLY with LM
-gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ...) {
+gnm_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ...) {
   
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
@@ -45,9 +53,15 @@ gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ..
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  mumod <- gam(ybar ~ s(a, 5) + . - a + a:(regionWEST + regionNORTHEAST + regionSOUTH), weights = exp(log.pop),
-               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
-  muhat <- mumod$fitted.values
+  
+  # GAM
+  # mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+  #              data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
+  
+  # GNM
+  gnm(ybar ~ ns(a, 6) + . - a - female - age_break - followup_year, data = data.frame(ybar = ybar, a = a, w),
+      eliminates = (as.factor(female):as.factor(age_break):as.factor(followup_year)), family = quasipoisson(),
+      weights = exp(log.pop))
   
   # predictions along a.vals
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {

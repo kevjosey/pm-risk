@@ -37,10 +37,17 @@ save(national_merged2016, file = "/n/dominici_nsaph_l3/Lab/projects/analytic/erc
 
 load("/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/national_merged2016.RData")
 national_merged2016$time_count <- rep(1, nrow(national_merged2016))
-national_merged2016$age_break <- cut(national_merged2016$age, c(65,75,85,95,125), right = FALSE)
-national_merged2016$female <- national_merged2016$sex - 1
-colnames(national_merged2016)[12] <- "pm25"
+national_merged2016$sex <- national_merged2016$sex - 1
+colnames(national_merged2016)[c(3,10)] <- c("female","pm25")
 national_merged2016$race[national_merged2016$race == 6] <- 3
+national_merged2016$race[national_merged2016$race == 0] <- 3
+national_merged2016$age_break[aggregate_data$entry_age_break %in% c(1,2)] <- "[65,75)" 
+national_merged2016$age_break[aggregate_data$entry_age_break %in% c(3,4)] <- "[75,85)" 
+national_merged2016$age_break[aggregate_data$entry_age_break %in% c(5,6)] <- "[85,95)" 
+national_merged2016$age_break[aggregate_data$entry_age_break %in% c(7,8)] <- "[95,125)"
+national_merged2016$entry_age_break <- national_merged2016$age_break
+national_merged2016$age_break <- NULL
+colnames(national_merged2016)[which(colnames(national_merged2016) == "entry_age_break")] <- "age_break"
 
 dead_personyear <- aggregate(data.frame(dead = national_merged2016$dead,
                                         time_count = national_merged2016$time_count),
@@ -49,10 +56,12 @@ dead_personyear <- aggregate(data.frame(dead = national_merged2016$dead,
                                      female = national_merged2016$female,
                                      race = national_merged2016$race,
                                      dual = national_merged2016$dual,
-                                     age_break = national_merged2016$age_break),
+                                     age_break = national_merged2016$age_break,
+                                     followup_year = national_merged2016$followup_year),
                              FUN=sum)
 
-new_data <- national_merged2016 %>% distinct(zip, year, female, race, dual, age_break, .keep_all = TRUE)
+new_data <- national_merged2016 %>% distinct(zip, year, female, race, dual,
+                                             age_break, followup_year, .keep_all = TRUE)
 confounders <- new_data[,c(1,2,4,6,12:27,29,30)]
 
 rm(national_merged2016, new_data); gc()

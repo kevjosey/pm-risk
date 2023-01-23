@@ -2,7 +2,9 @@ library(parallel)
 library(data.table)
 library(tidyr)
 library(dplyr)
-library(gam)
+library(splines)
+library(gnm)
+# library(gam)
 
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
@@ -12,12 +14,9 @@ set.seed(42)
 ## Setup
 
 # scenarios
-scenarios <- expand.grid(race = c("white","black", "asian", "hispanic", "other"),
-                         dual = c(0, 1), sex = c("male", "female"),
-                         age_break = c("[65,75)","[75,85)","[85,95)","[95,125)"))
+scenarios <- expand.grid(race = c("white","black", "asian", "hispanic", "other"), dual = c(0, 1))
 scenarios$dual <- as.numeric(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
-scenarios$age_break <- as.character(scenarios$age_break)
 a.vals <- seq(2, 31, length.out = 146)
 
 # Load/Save models
@@ -35,15 +34,6 @@ for (i in 1:nrow(scenarios)) {
   x.tmp <- setDF(new_data$x)
   w.tmp <- setDF(new_data$w)
   
-  # subset
-  w.tmp <- setDF(subset(w.tmp, age_break == scenario$age_break))
-  
-  if (scenario$sex == "male") {
-    w.tmp <- setDF(subset(w.tmp, female == 0))
-  } else {
-    w.tmp <- setDF(subset(w.tmp, female == 1))
-  }
-  
   # merge in ZIP-level covariates
   wx.tmp <- inner_join(w.tmp, x.tmp, by = c("zip", "year"))
   
@@ -55,13 +45,16 @@ for (i in 1:nrow(scenarios)) {
   ipw <- wx.tmp$ipw
   log.pop <- log(wx.tmp$time_count)
   
+  wx.tmp$year <- factor(wx.tmp$year)
+  wx.tmp$age_break <- factor(wx.tmp$age_break)
+  wx.tmp$followup_year <- factor(wx.tmp$followup_year)
+  
   # remove identifiers
   w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                  race, dual, female, age_break, 
-                                  id, ipw, cal))
+                                  race, dual, id, ipw, cal))
   
-  # fit gam outcome model
-  model_data <- gam_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
+  # fit gnm outcome model
+  model_data <- gnm_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
   individual_data <- data.frame(wx.tmp)
   zip_data <- data.frame(x.tmp)
   
@@ -69,7 +62,6 @@ for (i in 1:nrow(scenarios)) {
   
   # save data
   save(model_data, individual_data, zip_data, phat.vals,
-       file = paste0(dir_mod, dual_name, "_", scenario$race, "_", 
-                     scenario$sex, "_", scenario$age_break, ".RData"))
+       file = paste0(dir_mod, dual_name, "_", scenario$race, ".RData"))
   
 }

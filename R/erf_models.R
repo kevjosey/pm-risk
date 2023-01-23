@@ -38,6 +38,10 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
   
+  # Spline sensitivity
+  spl.lm <- predict(lm(psi.lm ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
+  spl.cal <- predict(lm(psi.cal ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
+  
   # Linear Model Approximations
   fit.lm <- lm(psi.lm ~ a, weights = wts, data = resid.dat)
   fit.cal <- lm(psi.cal ~ a, weights = wts, data = resid.dat)
@@ -51,8 +55,10 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
     variance.cal <- out.cal[2,]
     n.cal <- out.cal[3,]
     
-    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, n.lm = n.lm, fit.lm = fit.lm,
-                estimate.cal = estimate.cal, variance.cal = variance.cal, n.cal = n.cal, fit.cal = fit.cal))
+    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, 
+                n.lm = n.lm, fit.lm = fit.lm, spl.lm = spl.lm,
+                estimate.cal = estimate.cal, variance.cal = variance.cal, n.cal = n.cal, 
+                fit.cal = fit.cal, spl.cal = spl.cal))
     
   } else {
     
@@ -73,7 +79,7 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
                          a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
                          bw = 1, se.fit = TRUE) {	
   
-  # Prediction Matrix
+  # marginalize values within zip-year
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
   mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
   
