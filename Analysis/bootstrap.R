@@ -2,7 +2,8 @@ library(parallel)
 library(data.table)
 library(tidyr)
 library(dplyr)
-library(gam)
+library(splines)
+library(KernSmooth)
 
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/gam_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
@@ -24,29 +25,6 @@ fnames <- list.files(dir_mod, full.names = FALSE)
 scenarios <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))[-(2:3),]
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
-
-i_data <- list()
-
-# Individual-Level data
-for (j in 1:nrow(scenarios)) {
-  
-  print(j)
-  scenario <- scenarios[j,]
-  
-  load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
-  i_data[[j]] <- individual_data
-  
-}
-
-names(i_data) <- paste0(scenarios$dual, "_", scenarios$race)
-
-# ZIP Code Data
-zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
-             "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
-z_data <- zip_data
-u.zip <- unique(z_data$zip)
-
-rm(zip_data, individual_data, model_data, phat.vals); gc() # remove files from full fit
 
 # function for getting cluster bootstrap data
 # need to tweak to be more general
@@ -78,19 +56,20 @@ bootstrap_data <- function(data, index, u.zip) {
 for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
+  load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
   
   boot_list <- mcapply(1:boot.iter, function(b, ...) {
     
-    # m <- 2*sqrt(length(u.zip)) # for m out of n bootstrap 
+    m <- length(u.zip)/log(length(u.zip)) # for m out of n bootstrap
+    index <- sample(1:length(u.zip), m, replace = TRUE)  # initialize bootstrap  index
     
-    # initialize bootstrap data
-    index <- sample(1:length(u.zip), length(u.zip), replace = TRUE)
-    x <- bootstrap_data(data = z_data, index = index, u.zip = u.zip)
+    ## GPS Model
+    
+    # zip-code data
+    x <- bootstrap_data(data = zip_data, index = index, u.zip = u.zip)
     a <- x$pm25
     x.tmp <- subset(x, select = -c(zip, id, boot.id, pm25))
     x.tmp$year <- factor(x.tmp$year)
-    
-    ## GPS Model
     
     # fit GPS model
     pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
@@ -122,28 +101,28 @@ for (i in 1:nrow(scenarios)) {
     
     ## Outcome Model
     
-    # Fit subgroup-specific outcome models
-    w.tmp <- bootstrap_data(data = i_data[[i]], index = index, u.zip = u.zip)
+    # individual level data
+    w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
     wx <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
                      data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
     
     # factor strata variables
     wx$year <- factor(wx$year)
-    wx$age_break <- factor(wx$age_break)
+    wx$entry_age_break <- factor(wx$entry_age_break)
     wx$followup_year <- factor(wx$followup_year)
     
     # remove collinear terms and identifiers
-    if (scenario$dual == 2 & scenario$race == "all") {
+    if (scenario$dual == "both" & scenario$race == "all") {
       wx$race <- factor(wx$race)
       w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
-    } else if (scenario$dual == 2 & scenario$race != "all") {
+    } else if (scenario$dual == "both" & scenario$race != "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
                                   race, id, boot.id, ipw))
-    } else if (scenario$dual != 2 & scenario$race == "all") {
+    } else if (scenario$dual != "both" & scenario$race == "all") {
       wx$race <- factor(wx$race)
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
                                   dual, id, boot.id, ipw))
-    } else if (scenario$dual != 2 & scenario$race != "all") {
+    } else if (scenario$dual != "both" & scenario$race != "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
                                   dual, race, id, boot.id, ipw))
     }

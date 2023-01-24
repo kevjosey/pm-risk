@@ -10,7 +10,7 @@ gam_models <- function(y, a, w, ipw, cal, a.vals, log.pop = NULL, trunc = 0.01, 
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop),
                data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
@@ -44,7 +44,7 @@ gam_models_lm <- function(y, a, w, ipw, a.vals, log.pop = NULL, trunc = 0.01, ..
   
   # estimate nuisance outcome model with glm
   # need better coding to generalize
-  mumod <- gam(ybar ~ s(a, 6) + . - a, weights = exp(log.pop),
+  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop),
                data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   

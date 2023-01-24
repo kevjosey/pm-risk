@@ -3,7 +3,7 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
                       a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
                       bw = 1, se.fit = TRUE) {	
   
-  # marginalize values within zip-year
+  # Separate Data into List
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
   mat.list <- split(cbind(exp(log.pop), resid.lm, resid.cal, muhat.mat), w.id)
   
@@ -31,55 +31,51 @@ count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
-  # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
-                   a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
-  
-  out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
-                    a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
-  
   # Spline Regression Sensitivity
-  spl.lm <- predict(lm(psi.lm ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
-  spl.cal <- predict(lm(psi.cal ~ ns(a, 6), data = resid.dat), newdata = data.frame(a = a.vals))
+  spl.lm <- lm(psi.lm ~ ns(a, 6), data = resid.dat)
+  spl.cal <- lm(psi.cal ~ ns(a, 6), data = resid.dat)
   
   # Least Squares Approximations
-  fit.lm <- lm(psi.lm ~ a, weights = wts, data = resid.dat)
-  fit.cal <- lm(psi.cal ~ a, weights = wts, data = resid.dat)
+  fit.lm <- lm(psi.lm ~ a, data = resid.dat)
+  fit.cal <- lm(psi.cal ~ a, data = resid.dat)
   
   if (se.fit) {
     
+    # KWLS Regression
+    out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
+                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    
+    out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
+                      a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    
     estimate.lm <- out.lm[1,]
     variance.lm <- out.lm[2,]
-    n.lm <- out.lm[3,]
     estimate.cal <- out.cal[1,]
     variance.cal <- out.cal[2,]
-    n.cal <- out.cal[3,]
     
     return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, 
-                n.lm = n.lm, fit.lm = fit.lm, spl.lm = spl.lm,
-                estimate.cal = estimate.cal, variance.cal = variance.cal, n.cal = n.cal, 
+                fit.lm = fit.lm, spl.lm = spl.lm,
+                estimate.cal = estimate.cal, variance.cal = variance.cal,
                 fit.cal = fit.cal, spl.cal = spl.cal))
     
   } else {
     
-    estimate.lm <- out.lm[1,]
-    n.lm <- out.lm[2,]
-    estimate.cal <- out.cal[1,]
-    n.cal <- out.cal[2,]
+    out.lm <- approx(locpoly(resid.dat$a, resid$psi.lm, bandwidth = bw), xout = a.vals)$y
+    out.cal <- approx(locpoly(resid.dat$a, resid$psi.cal, bandwidth = bw), xout = a.vals)$y
     
-    return(list( estimate.lm = out.lm, n.lm = n.lm, fit.lm = fit.lm, 
-                 estimate.cal = out.cal, n.cal = n.cal, fit.cal = fit.cal))
+    return(list(estimate.lm = out.lm, fit.lm = fit.lm, spl.lm = spl.lm,
+                estimate.cal = out.cal, fit.cal = fit.cal, spl.cal = spl.cal))
     
   }
   
 }
 
-# count_erf where we ONLY consider lm
+# count_erf where we ONLY consider KWLS + LM GPS
 count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
                          a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
                          bw = 1, se.fit = TRUE) {	
   
-  # marginalize values within zip-year
+  # Separate Data into List
   wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
   mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
   
@@ -106,30 +102,28 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
   phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
   int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
   
-  # KWLS Regression
-  out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
-                   a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
-  
   if (se.fit) {
+    
+    # KWLS Regression
+    out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
+                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
     
     estimate.lm <- out.lm[1,]
     variance.lm <- out.lm[2,]
-    n.lm <- out.lm[3,]
     
-    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, n.lm = n.lm))
+    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm))
     
   } else {
     
-    estimate.lm <- out.lm[1,]
-    n.lm <- out.lm[2,]
+    out.lm <- approx(locpoly(resid.dat$a, resid$psi.lm, bandwidth = bw), xout = a.vals)$y
     
-    return(list(estimate.lm = out.lm, n.lm = n.lm))
+    return(list(estimate.lm = out.lm))
     
   }
   
 }
 
-# kernel estimation
+## kernel estimation
 kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals = NULL, int.mat = NULL) {
   
   n <- length(a)
@@ -172,7 +166,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   
 }
 
-# cross validated bandwidth
+## k-fold cross validated bandwidth
 cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0.1)) {
   
   if (is.null(weights))
@@ -202,4 +196,31 @@ cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0
   
   return(bw)
   
+}
+
+## Leave-one-out cross-validated bandwidth
+w.fn <- function(h, a, a.vals) {
+  
+  w.avals <- sapply(a.vals, function(a.tmp, ...) {
+    a.std <- (a - a.tmp) / h
+    k.std <- dnorm(a.std) / h
+    return(mean(a.std^2 * k.std) * (dnorm(0) / h) /
+      (mean(k.std) * mean(a.std^2 * k.std) - mean(a.std * k.std)^2))
+  })
+  
+  return(w.avals / length(a))
+  
+}
+
+hatvals <- function(h, a, a.vals) {
+  approx(a.vals, w.fn(h = h, a = a, a.vals = a.vals), xout = a)$y
+}
+
+cts.eff.fn <- function(psi, a, h) {
+  approx(locpoly(a, psi, bandwidth = h), xout = a)$y
+}
+
+risk.fn <- function(h, psi, a, a.vals) {
+  hats <- hatvals(h = h, a = a, a.vals = a.vals)
+  mean(((psi - cts.eff.fn(psi = psi, a = a, h = h)) / (1 - hats))^2)
 }
