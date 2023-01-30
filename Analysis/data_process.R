@@ -39,6 +39,8 @@ load("/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/national_merged2016.
 national_merged2016$time_count <- rep(1, nrow(national_merged2016))
 national_merged2016$sex <- national_merged2016$sex - 1
 colnames(national_merged2016)[3] <- c("female")
+
+# label unknown and american/alaska natives as "other"
 national_merged2016$race[national_merged2016$race == 6] <- 3
 national_merged2016$race[national_merged2016$race == 0] <- 3
 
@@ -48,7 +50,7 @@ national_merged2016$age_break[national_merged2016$entry_age_break %in% c(3,4)] <
 national_merged2016$age_break[national_merged2016$entry_age_break %in% c(5,6)] <- "[85,95)" 
 national_merged2016$age_break[national_merged2016$entry_age_break %in% c(7,8)] <- "[95,125)"
 
-# reordering data
+# reordering columns for my sanity
 national_merged2016$entry_age_break <- national_merged2016$age_break
 national_merged2016$age_break <- NULL
 

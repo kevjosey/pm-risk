@@ -26,7 +26,7 @@ idx12 <- which.min(abs(a.vals - 12))
 
 ### Create Data
 
-# USING MORTALITY RATE
+## Hazard Ratio
 for (i in 1:nrow(scenarios)) {
   
   # QD

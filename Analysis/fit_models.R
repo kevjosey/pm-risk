@@ -9,65 +9,67 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
-## Setup
-
 # scenarios
-scenarios <- expand.grid(race = c("white", "black", "all"), 
-                         dual = c("high", "low", "both"))
-scenarios$dual <- as.numeric(scenarios$dual)
+scenarios <- expand.grid(dual = c("both", "high", "low"),
+                         race = c("all", "white", "black"))
+# scenarios <- expand.grid(dual = c("high", "low"),
+#                          race = c("white", "black", "asian", "hispanic", "other"))
+scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 
+### Fit Outcome Models
+
 # Load/Save models
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New/'
+dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data/'
 
 for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
   
-  phat.vals <- new_data$phat.vals
-  x.tmp <- setDF(new_data$x)
-  w.tmp <- setDF(new_data$w)
-  
   # merge in ZIP-level covariates
-  wx.tmp <- inner_join(w.tmp, x.tmp, by = c("zip", "year"))
+  wx.tmp <- inner_join(setDF(new_data$w), setDF(new_data$x), by = c("zip", "year"))
+  phat.vals <- new_data$phat.vals
   
   # extract data components
-  w.id <- wx.tmp$id
+  id <- wx.tmp$id
   y <- wx.tmp$dead
   a <- wx.tmp$pm25
-  cal <- wx.tmp$cal
   ipw <- wx.tmp$ipw
+  cal <- wx.tmp$cal
+  cal_trunc <- wx.tmp$cal_trunc
   log.pop <- log(wx.tmp$time_count)
   
-  # factor variables
+  # factor variables (redundant)
   wx.tmp$year <- as.factor(wx.tmp$year)
+  wx.tmp$race <- factor(wx.tmp$race)
   wx.tmp$entry_age_break <- as.factor(wx.tmp$entry_age_break)
   wx.tmp$followup_year <- as.factor(wx.tmp$followup_year)
   
   # remove collinear terms and identifiers
   if (scenario$dual == "both" & scenario$race == "all") {
-    wx.tmp$race <- factor(wx.tmp$race)
-    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, id, ipw, cal))
+    w.tmp <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
+                                        id, ipw, cal, cal_trunc))
   } else if (scenario$dual == "both" & scenario$race != "all") {
-    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                    race, id, ipw, cal))
+    w.tmp <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, race, 
+                                        id, ipw, cal, cal_trunc))
   } else if (scenario$dual != "both" & scenario$race == "all") {
-    wx.tmp$race <- factor(wx.tmp$race)
-    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                    dual, id, ipw, cal))
+    w.tmp <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, dual,
+                                        id, ipw, cal, cal_trunc))
   } else if (scenario$dual != "both" & scenario$race != "all") {
-    w <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,
-                                    dual, race, id, ipw, cal))
+    w.tmp <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count, dual, race,
+                                        id, ipw, cal, cal_trunc))
   }
   
   # fit gam outcome model
-  model_data <- gam_models(y = y, a = a, w = w, log.pop = log.pop, ipw = ipw, cal = cal, a.vals = a.vals)
+  model_data <- gam_models(y = y, a = a, w = w.tmp, log.pop = log.pop, a.vals = a.vals,
+                           id = id, ipw = ipw, cal = cal, cal_trunc = cal_trunc)
   individual_data <- data.frame(wx.tmp)
-  zip_data <- data.frame(x.tmp)
+  zip_data <- data.frame(new_data$x)
   
+  # check progress
   print(paste0("Fit Complete: Scenario ", i))
   print(Sys.time())
   

@@ -8,74 +8,24 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
+# scenarios
+scenarios <- expand.grid(dual = c("both", "high", "low"),
+                         race = c("all", "white", "black", "asian", "hispanic", "other"))
+scenarios$dual <- as.character(scenarios$dual)
+scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 
-### Fit Weights
+### Fit Balancing and GPS Weights
 
 # Save Location
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/'
 load(paste0(dir_data,"aggregate_data.RData"))
 
-# initialize data
-
-zip_cov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
-             "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
-zip.tmp <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
-                      model.matrix(~ ., data = aggregate_data[,zip_cov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
-
-a <- zip.tmp$pm25
-x.tmp <- subset(zip.tmp, select = -c(zip, pm25))
-x.tmp$year <- factor(x.tmp$year)
-
-## LM GPS
-pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
-pimod.vals <- c(pimod$fitted.values)
-pimod.sd <- sigma(pimod)
-
-# nonparametric density
-a.std <- c(a - pimod.vals) / pimod.sd
-dens <- density(a.std)
-pihat <- approx(x = dens$x, y = dens$y, xout = a.std)$y / pimod.sd
-
-# get ipw numerator
-pihat.mat <- sapply(a.vals, function(a.tmp, ...) {
-  std <- c(a.tmp - pimod.vals) / pimod.sd
-  approx(x = dens$x, y = dens$y, xout = std)$y / pimod.sd
-})
-
-phat.vals <- colMeans(pihat.mat, na.rm = TRUE)
-phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
-phat[phat < 0] <- .Machine$double.eps
-ipw <- phat/pihat
-
-## Calibration Weights
-x <- x.tmp %>% mutate_if(is.numeric, scale)
-x.mat <- model.matrix(~ ., data = data.frame(x))
-astar <- c(a - mean(a))/var(a)
-astar2 <- c((a - mean(a))^2/var(a) - 1)
-mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
-                 target = c(length(a), rep(0, ncol(x.mat) + 1)))
-cal <- mod$weights
-
-# truncation
-trunc0 <- quantile(ipw, 0.005)
-trunc1 <- quantile(ipw, 0.995)
-ipw[ipw < trunc0] <- trunc0
-ipw[ipw > trunc1] <- trunc1
-
-trunc0 <- quantile(cal, 0.005)
-trunc1 <- quantile(cal, 0.995)
-cal[cal < trunc0] <- trunc0
-cal[cal > trunc1] <- trunc1
-
-x <- cbind(zip.tmp, ipw = ipw, cal = cal)
-
-### Create Strata Data
-
-create_strata <- function(data, x, phat.vals,
-                          dual = c("high","low","both"),
+# Function for Fitting Weights
+create_strata <- function(aggregate_data,
+                          dual = c("high","low"),
                           race = c("white", "black", "asian", 
-                                          "hispanic", "other","all")) {
+                                          "hispanic", "other")) {
   
   if (dual == "high") {
     dual0 <- 0
@@ -99,44 +49,99 @@ create_strata <- function(data, x, phat.vals,
     race0 <- c(1,2,3,4,5)
   }
   
-  sub_data <- subset(data, race %in% race0 & dual %in% dual0)
+  sub_data <- subset(aggregate_data, race %in% race0 & dual %in% dual0)
   
-  # Covariates and Outcomes
+  # Outcome and Person-Years At-Risk
   w <- data.table(zip = sub_data$zip, year = sub_data$year, race = sub_data$race,
                   female = sub_data$female, dual = sub_data$dual, entry_age_break = sub_data$entry_age_break,
                   followup_year = sub_data$followup_year, dead = sub_data$dead, time_count = sub_data$time_count)[
                     ,lapply(.SD, sum), by = c("zip", "year", "race", "female", "dual", "entry_age_break", "followup_year")]
   
+  # ZIP Code Covariates
+  zcov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
+            "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
+  zip.tmp <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
+                        model.matrix(~ ., data = aggregate_data[,zcov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
+  
+  # remove next two lines for full population weights
+  u.zip.year <- unique(paste(w$zip, w$year, sep = "-"))
+  x <- subset(zip.tmp, paste(zip, year, sep = "-") %in% u.zip.year)
+  
+  a <- x$pm25
+  x.tmp <- subset(x, select = -c(zip, pm25))
+  x.tmp$year <- factor(x.tmp$year)
+  x.tmp <- x.tmp %>% mutate_if(is.numeric, scale)
+  
+  ## LM GPS
+  
+  pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
+  pimod.vals <- c(pimod$fitted.values)
+  pimod.sd <- sigma(pimod)
+  
+  # nonparametric density
+  a.std <- c(a - pimod.vals) / pimod.sd
+  dens <- density(a.std)
+  pihat <- approx(x = dens$x, y = dens$y, xout = a.std)$y / pimod.sd
+  
+  # ipw numerator
+  pihat.mat <- sapply(a.vals, function(a.tmp, ...) {
+    std <- c(a.tmp - pimod.vals) / pimod.sd
+    approx(x = dens$x, y = dens$y, xout = std)$y / pimod.sd
+  })
+  
+  phat.vals <- colMeans(pihat.mat, na.rm = TRUE)
+  phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
+  phat[phat < 0] <- .Machine$double.eps
+  
+  x$ipw <- phat/pihat
+  
+  ## Calibration Weights
+  
+  x.mat <- model.matrix(~ ., data = data.frame(x.tmp))
+  astar <- c(a - mean(a))/var(a)
+  astar2 <- c((a - mean(a))^2/var(a) - 1)
+  mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
+                   target = c(length(a), rep(0, ncol(x.mat) + 1)))
+  
+  x$cal <- mod$weights
+  
+  # truncation
+  trunc0 <- quantile(x$ipw, 0.005)
+  trunc1 <- quantile(x$ipw, 0.995)
+  x$ipw[x$ipw < trunc0] <- trunc0
+  x$ipw[x$ipw > trunc1] <- trunc1
+  
+  x$cal_trunc <- x$cal
+  
+  trunc0 <- quantile(x$cal, 0.005)
+  trunc1 <- quantile(x$cal, 0.995)
+  x$cal_trunc[x$cal < trunc0] <- trunc0
+  x$cal_trunc[x$cal > trunc1] <- trunc1
+  
+  # format variables
+  w$zip <- factor(w$zip)
+  w$year <- factor(w$year)
+  w$female <- as.numeric(w$female)
+  w$race <- factor(w$race)
+  w$dual <- as.numeric(w$dual)
+  w$entry_age_break <- factor(w$entry_age_break)
+  w$followup_year <- factor(w$followup_year)
+  
+  x$zip <- factor(x$zip)
+  x$year <- factor(x$year)
+  x$id <- paste(x$zip, x$year, sep = "-")
+  
   return(list(w = w, x = x, phat.vals = phat.vals))
   
 }
-
-# scenarios
-scenarios <- expand.grid(dual = c("high", "low", "both"),
-                         race = c("white", "black", "asian", "hispanic", "other", "all"))
-scenarios$dual <- as.character(scenarios$dual)
-scenarios$race <- as.character(scenarios$race)
-
-# format variables
-aggregate_data$region <- factor(aggregate_data$region)
-aggregate_data$zip <- factor(aggregate_data$zip)
-aggregate_data$year <- factor(aggregate_data$year)
-aggregate_data$female <- as.numeric(aggregate_data$female)
-aggregate_data$race <- factor(aggregate_data$race)
-aggregate_data$dual <- as.numeric(aggregate_data$dual)
-aggregate_data$entry_age_break <- factor(aggregate_data$entry_age_break)
-aggregate_data$followup_year <- factor(aggregate_data$followup_year)
-
-x$zip <- factor(x$zip)
-x$year <- factor(x$year)
-x$id <- paste(x$zip, x$year, sep = "-")
 
 # collate
 lapply(1:nrow(scenarios), function(i, ...) {
   
   scenario <- scenarios[i,]
-  new_data <- create_strata(data = aggregate_data, x = x, phat.vals = phat.vals,
-                            dual = scenario$dual, race = scenario$race)
+  new_data <- create_strata(aggregate_data = aggregate_data, dual = scenario$dual, race = scenario$race)
+  
+  print(i)
   save(new_data, file = paste0(dir_data, "qd/", scenario$dual, "_", scenario$race, ".RData"))
   
 })

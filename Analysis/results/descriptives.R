@@ -7,20 +7,20 @@ library(readr)
 ## write a function to add a row for continuous variables
 add_cont <- function(x, w = rep(1, length(x)), nm_var, nm_level, ndig = 2) {
   
-    n_x<-sum(!is.na(x))
-    mean_x<-round(weightedMean(x = x, w = w, na.rm = T),ndig)
-    sd_x<-round(weightedSd(x = x, w = w, na.rm=T), ndig)
-    return(c(nm_var, nm_level, n_x, mean_x, sd_x))
+  n_x<-sum(!is.na(x))
+  mean_x<-round(weightedMean(x = x, w = w, na.rm = T),ndig)
+  sd_x<-round(weightedSd(x = x, w = w, na.rm=T), ndig)
+  return(c(nm_var, nm_level, n_x, mean_x, sd_x))
   
 }
 
 ## write a function to add a row for a level of a categorical variable
 add_cat <- function(x, w = rep(1, length(x)), nm_var, nm_level, ndig = 2){
-
-    n_x<-sum(!is.na(x))
-    n_x1<-sum(w[x==1], na.rm=T)
-    pct_x1<-round(100*n_x1/sum(w), ndig)
-    return(c(nm_var, nm_level, n_x, n_x1, pct_x1))
+  
+  n_x<-sum(!is.na(x))
+  n_x1<-sum(w[x==1], na.rm=T)
+  pct_x1<-round(100*n_x1/sum(w), ndig)
+  return(c(nm_var, nm_level, n_x, n_x1, pct_x1))
   
 }
 
@@ -45,7 +45,7 @@ scenarios$race <- as.character(scenarios$race)
 scenarios$age <- as.character(scenarios$age)
 
 for (i in 1:nrow(scenarios)){
-
+  
   # Table 1 -----------------------------------------------------------------
   
   scenario <- scenarios[i,]
@@ -56,7 +56,7 @@ for (i in 1:nrow(scenarios)){
   
   if (scenario$age != "all")
     cohort.tmp <- subset(cohort.tmp, age_break == scenario$age)
-
+  
   cross.tmp <- with(zip.tmp, data.frame(zip = zip, year = year, mw = 1 - (regionNORTHEAST + regionSOUTH + regionWEST),
                                         ne = regionNORTHEAST, south = regionSOUTH, west = regionWEST))
   

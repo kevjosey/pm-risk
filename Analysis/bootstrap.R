@@ -10,21 +10,19 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
-### bootstrap
-
-dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data_New'
-
+# scenarios
+scenarios <- expand.grid(dual = c("both", "high", "low"), 
+                         race = c("all", "white", "black"))[-(2:3),]
+# scenarios <- expand.grid(dual = c("both", "high", "low"), 
+#                          race = c("asian", "hispanic", "other"))
+scenarios$dual <- as.character(scenarios$dual)
+scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 boot.iter <- 500 # bootstrap iterations
 
-# filenames
-filenames <- list.files(dir_mod, full.names = TRUE)
-fnames <- list.files(dir_mod, full.names = FALSE)
+### M-out-of-N Bootstrap
 
-# scenarios
-scenarios <- expand.grid(dual = c("both","high", "low"), race = c("all","white","black"))[-(2:3),]
-scenarios$dual <- as.character(scenarios$dual)
-scenarios$race <- as.character(scenarios$race)
+dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 
 # function for getting cluster bootstrap data
 # need to tweak to be more general
@@ -56,7 +54,10 @@ bootstrap_data <- function(data, index, u.zip) {
 for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
-  load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
+  load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
+  
+  zip_data <- new_data$x
+  individual_data <- new_data$w
   
   boot_list <- mcapply(1:boot.iter, function(b, ...) {
     
@@ -70,56 +71,42 @@ for (i in 1:nrow(scenarios)) {
     a <- x$pm25
     x.tmp <- subset(x, select = -c(zip, id, boot.id, pm25))
     x.tmp$year <- factor(x.tmp$year)
+    x.tmp <- x.tmp %>% mutate_if(is.numeric, scale)
     
-    # fit GPS model
-    pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
-    pimod.vals <- c(pimod$fitted.values)
-    pimod.sd <- sigma(pimod)
-    
-    # nonparametric density
-    a.std <- c(a - pimod.vals) / pimod.sd
-    dens <- density(a.std)
-    pihat <- approx(x = dens$x, y = dens$y, xout = a.std)$y / pimod.sd
-    
-    # get ipw numerator
-    pihat.mat <- sapply(a.vals, function(a.tmp, ...) {
-      std <- c(a.tmp - pimod.vals) / pimod.sd
-      approx(x = dens$x, y = dens$y, xout = std)$y / pimod.sd
-    })
-    
-    phat.vals <- colMeans(pihat.mat, na.rm = TRUE)
-    phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
-    phat[phat < 0] <- .Machine$double.eps
-    ipw <- phat/pihat
+    # fit calibration weights
+    x.mat <- model.matrix(~ ., data = data.frame(x.tmp))
+    astar <- c(a - mean(a))/var(a)
+    astar2 <- c((a - mean(a))^2/var(a) - 1)
+    mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
+                     target = c(length(a), rep(0, ncol(x.mat) + 1)))
+    x$cal <- mod$weights
     
     # truncation
-    trunc0 <- quantile(ipw, 0.005)
-    trunc1 <- quantile(ipw, 0.995)
-    ipw[ipw < trunc0] <- trunc0
-    ipw[ipw > trunc1] <- trunc1
-    x$ipw <- ipw
+    trunc0 <- quantile(x$cal, 0.005)
+    trunc1 <- quantile(x$cal, 0.995)
+    x$cal[x$cal < trunc0] <- trunc0
+    x$cal[x$cal > trunc1] <- trunc1
     
     ## Outcome Model
     
-    # individual level data
+    # individual-level data
     w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
-    wx <- inner_join(subset(w.tmp, select = -c(ipw, cal)),
+    wx <- inner_join(subset(w.tmp, select = -c(ipw, cal, cal_trunc)),
                      data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
     
     # factor strata variables
     wx$year <- factor(wx$year)
     wx$entry_age_break <- factor(wx$entry_age_break)
     wx$followup_year <- factor(wx$followup_year)
+    wx$race <- factor(wx$race)
     
     # remove collinear terms and identifiers
     if (scenario$dual == "both" & scenario$race == "all") {
-      wx$race <- factor(wx$race)
       w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
     } else if (scenario$dual == "both" & scenario$race != "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
                                   race, id, boot.id, ipw))
     } else if (scenario$dual != "both" & scenario$race == "all") {
-      wx$race <- factor(wx$race)
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
                                   dual, id, boot.id, ipw))
     } else if (scenario$dual != "both" & scenario$race != "all") {
@@ -127,19 +114,19 @@ for (i in 1:nrow(scenarios)) {
                                   dual, race, id, boot.id, ipw))
     }
     
-    model_data <- gam_models_lm(y = wx$dead, a = wx$pm25, w = w,
-                                log.pop = log(wx$time_count), 
-                                ipw = wx$ipw, a.vals = a.vals)
+    # fit gam model
+    z <- gam_models_boot(y = wx$dead, a = wx$pm25, log.pop = log(wx$time_count), 
+                         weights = wx$cal, id = wx$boot.id, w = w, a.vals = a.vals)
     
     # set bandwidth from whole data
-    target <- count_erf_lm(resid.lm = model_data$resid.lm, muhat.mat = model_data$muhat.mat,
-                           log.pop = model_data$log.pop, w.id = wx$boot.id, a = x$pm25, x.id = x$boot.id,
-                           bw = 1, a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
+    target <- count_erf_boot(resid.lm = z$resid, muhat.mat = z$muhat.mat, log.pop = z$log.pop,
+                             w.id = z$id, x.id = x$boot.id, a = a, bw = 2,
+                             a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
     print(paste("Completed Scenario: ", i))
     return(target$estimate.lm)
     
-  })
+  }, mc.cores = 16)
   
   boot_mat <- do.call(rbind, boot_list)
   colnames(boot_mat) <- a.vals

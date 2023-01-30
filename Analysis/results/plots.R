@@ -13,7 +13,7 @@ a.vals <- seq(2, 31, length.out = 146)
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All_New/'
+dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
 
 pm <- data.frame()
 ar <- data.frame()
@@ -31,17 +31,23 @@ idx12 <- which.min(abs(a.vals - 12))
 
 for (i in 1:nrow(scenarios)) {
   
-  # QD
   scenario <- scenarios[i,]
   load(paste0(dir_out, scenario$dual, "_", scenario$race, ".RData"))
   
   if (i == 1) {
     
-    xiao <- data.frame(a.vals = c(est_data$a.vals, est_data$a.vals), 
-                       estimate = c(est_data$estimate.lm, est_data$estimate.cal), 
-                       gps_method = c(rep("LM", nrow(est_data)), rep("CAL", nrow(est_data))), 
-                       lower = c(est_data[,2] - 1.96*est_data[,3],est_data[,5] - 1.96*est_data[,6]),
-                       upper = c(est_data[,2] + 1.96*est_data[,3],est_data[,5] + 1.96*est_data[,6]))
+    xiao <- data.frame(a.vals = rep(est_data$a.vals, 3), 
+                       estimate = c(est_data$estimate.lm, est_data$estimate.cal,
+                                    est_data$estimate.cal_trunc), 
+                       gps_method = c(rep("LM", nrow(est_data)), 
+                                      rep("CAL", nrow(est_data)),
+                                      rep("CAL_TRUNC", nrow(est_data))), 
+                       lower = c(est_data[,2] - 1.96*est_data[,3],
+                                 est_data[,4] - 1.96*est_data[,5],
+                                 est_data[,6] - 1.96*est_data[,7]),
+                       upper = c(est_data[,2] + 1.96*est_data[,3],
+                                 est_data[,4] + 1.96*est_data[,5],
+                                 est_data[,6] + 1.96*est_data[,7]))
     
     save(xiao, file = '~/Data/xiao.RData')
     
@@ -55,22 +61,22 @@ for (i in 1:nrow(scenarios)) {
   
   # absolute risks
   ar_tmp <- data.frame(a.vals = c(est_data$a.vals), 
-                       estimate = c(est_data[,2]),
-                       lower = c(est_data[,2] - 1.96*est_data[,3]),
-                       upper = c(est_data[,2] + 1.96*est_data[,3]),
+                       estimate = c(est_data[,6]),
+                       lower = c(est_data[,6] - 1.96*est_data[,7]),
+                       upper = c(est_data[,6] + 1.96*est_data[,7]),
                        race = rep(scenario$race, nrow(est_data)),
                        dual = rep(scenario$dual, nrow(est_data)))
   
   # contrasts
-  contr_tmp_11 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx11,2])
-  contr_tmp_10 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx10,2])
-  contr_tmp_9 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx9,2])
-  contr_tmp_8 <- as.numeric(est_data[idx12,2]) - as.numeric(est_data[idx8,2])
+  contr_tmp_11 <- as.numeric(est_data[idx12,6]) - as.numeric(est_data[idx11,6])
+  contr_tmp_10 <- as.numeric(est_data[idx12,6]) - as.numeric(est_data[idx10,6])
+  contr_tmp_9 <- as.numeric(est_data[idx12,6]) - as.numeric(est_data[idx9,6])
+  contr_tmp_8 <- as.numeric(est_data[idx12,6]) - as.numeric(est_data[idx8,6])
   
-  contr_se_11 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx11,3])^2)
-  contr_se_10 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx10,3])^2)
-  contr_se_9 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx9,3])^2)
-  contr_se_8 <- sqrt(as.numeric(est_data[idx12,3])^2 + as.numeric(est_data[idx8,3])^2)
+  contr_se_11 <- sqrt(as.numeric(est_data[idx12,7])^2 + as.numeric(est_data[idx11,7])^2)
+  contr_se_10 <- sqrt(as.numeric(est_data[idx12,7])^2 + as.numeric(est_data[idx10,7])^2)
+  contr_se_9 <- sqrt(as.numeric(est_data[idx12,7])^2 + as.numeric(est_data[idx9,7])^2)
+  contr_se_8 <- sqrt(as.numeric(est_data[idx12,7])^2 + as.numeric(est_data[idx8,7])^2)
   
   contrast_tmp <- data.frame(estimate = c(contr_tmp_11, contr_tmp_10, contr_tmp_9, contr_tmp_8),
                              lower = c(contr_tmp_11 - 1.96*contr_se_11, 
@@ -89,22 +95,22 @@ for (i in 1:nrow(scenarios)) {
   contrast_tmp$contrast <- paste0(contrast_tmp$pm1, " vs. ", contrast_tmp$pm0)
   
   # hazard ratio
-  hr_tmp_8 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx8,2]))
-  hr_tmp_9 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx9,2]))
-  hr_tmp_10 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx10,2]))
-  hr_tmp_11 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx11,2]))
-  hr_tmp_12 <- c(as.numeric(est_data[,2])/as.numeric(est_data[idx12,2]))
+  hr_tmp_8 <- c(as.numeric(est_data[,6])/as.numeric(est_data[idx8,6]))
+  hr_tmp_9 <- c(as.numeric(est_data[,6])/as.numeric(est_data[idx9,6]))
+  hr_tmp_10 <- c(as.numeric(est_data[,6])/as.numeric(est_data[idx10,6]))
+  hr_tmp_11 <- c(as.numeric(est_data[,6])/as.numeric(est_data[idx11,6]))
+  hr_tmp_12 <- c(as.numeric(est_data[,6])/as.numeric(est_data[idx12,6]))
   
-  log_hr_se_8 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
-                        c(est_data[idx8,3]^2)/c(est_data[idx8,2]^2)) 
-  log_hr_se_9 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
-                        c(est_data[idx9,3]^2)/c(est_data[idx9,2]^2)) 
-  log_hr_se_10 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
-                         c(est_data[idx10,3]^2)/c(est_data[idx10,2]^2)) 
-  log_hr_se_11 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
-                         c(est_data[idx11,3]^2)/c(est_data[idx11,2]^2)) 
-  log_hr_se_12 <- sqrt(c(est_data[,3]^2)/c(est_data[,2]^2) + 
-                         c(est_data[idx12,3]^2)/c(est_data[idx12,2]^2))
+  log_hr_se_8 <- sqrt(c(est_data[,7]^2)/c(est_data[,6]^2) + 
+                        c(est_data[idx8,7]^2)/c(est_data[idx8,6]^2)) 
+  log_hr_se_9 <- sqrt(c(est_data[,7]^2)/c(est_data[,6]^2) + 
+                        c(est_data[idx9,7]^2)/c(est_data[idx9,6]^2)) 
+  log_hr_se_10 <- sqrt(c(est_data[,7]^2)/c(est_data[,6]^2) + 
+                         c(est_data[idx10,7]^2)/c(est_data[idx10,6]^2)) 
+  log_hr_se_11 <- sqrt(c(est_data[,7]^2)/c(est_data[,6]^2) + 
+                         c(est_data[idx11,7]^2)/c(est_data[idx11,6]^2)) 
+  log_hr_se_12 <- sqrt(c(est_data[,7]^2)/c(est_data[,6]^2) + 
+                         c(est_data[idx12,7]^2)/c(est_data[idx12,6]^2))
   
   hr_tmp <- data.frame(estimate = c(hr_tmp_8, hr_tmp_9, hr_tmp_10, hr_tmp_11, hr_tmp_12),
                        lower = c(exp(log(hr_tmp_8) - 1.96*log_hr_se_8), 
@@ -176,7 +182,8 @@ prop_plot <- prop_dat %>%
   geom_bar(stat = "identity", position = "dodge") +
   geom_hline(yintercept = 1, linetype = "dashed") +
   geom_hline(yintercept = 0, linetype = "solid") +
-  labs(x = "", y = "Proportion of Participants at Risk",
+  labs(x = "",
+       y = "Proportion of Participants at Risk",
        fill = ~ PM[2.5]*" Concentration Thresholds") +
   coord_cartesian(ylim = c(0,1)) +
   theme_bw() +
@@ -203,9 +210,10 @@ pm_dat <- subset(pm, race != "all" & dual != "both")
 exposure_plot <- pm_dat %>%
   ggplot(aes(x = as.numeric(year), y = pm, color = race_label, linetype = dual_label)) +
   geom_line(size = 1) +
-  labs(x = "Year", 
+  labs(x = "Year",
        y = ~"Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
-       color = "Race", linetype = "SEP") +
+       color = "Race", 
+       linetype = "SEP") +
   theme_bw() +
   theme(legend.position = c(0.85, 0.85),
         legend.background = element_rect(colour = "black"),
@@ -221,7 +229,7 @@ dev.off()
 
 ## Hazard Ratio
 
-hr_tmp <- subset(hr, dual == "both" & race == "all" &  pm0 == 12)
+hr_tmp <- subset(hr, dual == "both" & race == "all" & pm0 == 12)
 
 # exposure response curve
 hr_plot <- hr_tmp %>%
@@ -239,14 +247,17 @@ hr_plot <- hr_tmp %>%
   geom_segment(x = 3, y = hr_tmp$estimate[idx10], xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
   geom_segment(x = 3, y = hr_tmp$estimate[idx11], xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
   theme_bw() +
-  coord_cartesian(xlim = c(5,13), ylim = c(0.88, 1.02)) +
-  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Hazard Ratio") +
+  coord_cartesian(xlim = c(5,13), 
+                  ylim = c(0.88, 1.02)) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
+       y = "Hazard Ratio",
+       title = "TRUNCATED CALIBRATION") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_y_continuous(breaks = c(0.88,0.89,0.9,0.91,0.92,0.93,0.94,0.95,
                                 0.96,0.97,0.98,0.99,1,1.01,1.02)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
 
-pdf(file = "~/Figures/hr_plot.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/hr_plot_cal_trunc.pdf", width = 10, height = 8)
 hr_plot
 dev.off()
 
@@ -268,13 +279,17 @@ ar_plot <- ar_tmp %>%
   geom_segment(x = 3, y = ar_tmp$estimate[idx10], xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
   geom_segment(x = 3, y = ar_tmp$estimate[idx11], xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
   theme_bw() +
-  coord_cartesian(xlim = c(5,15), ylim = c(0.044,0.052)) +
-  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Absolute Mortality Rate") +
+  coord_cartesian(xlim = c(5,15), 
+                  ylim = c(0.044,0.052)) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
+       y = "Absolute Mortality Rate",
+       title = "TRUNCATED CALIBRATION") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
-  scale_y_continuous(breaks = c(0.044,0.045,0.046,0.047,0.048,0.049,0.05,0.051,0.052)) +
+  scale_y_continuous(breaks = c(0.044,0.045,0.046,0.047,0.048,
+                                0.049,0.05,0.051,0.052)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
-pdf(file = "~/Figures/ar_plot.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/ar_plot_cal_trunc.pdf", width = 10, height = 8)
 ar_plot
 dev.off()
 
@@ -295,16 +310,21 @@ hr_strata <- hr_tmp %>%
   geom_hline(yintercept = 1, linetype = "dotted") +
   geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted") +
   facet_wrap(~ dual_label) +
-  coord_cartesian(xlim = c(5,13), ylim = c(0.85, 1.02)) +
-  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Hazard Ratio", color = "Race") +
+  coord_cartesian(xlim = c(5,13), 
+                  ylim = c(0.85, 1.02)) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
+       y = "Hazard Ratio",
+       color = "Race",
+       title = "TRUNCATED CALIBRATION") +
   theme_bw() +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_color_manual(values = c("#367E18", "#F57328")) +
   scale_y_continuous(breaks = c(0.85,0.86,0.87,0.88,0.89,0.9,0.91,0.92,0.93,
                                 0.94,0.95,0.96,0.97,0.98,0.99,1,1.01,1.02)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
 
-pdf(file = "~/Figures/hr_strata.pdf", width = 16, height = 8)
+pdf(file = "~/Figures/hr_strata_cal_trunc.pdf", width = 16, height = 8)
 hr_strata
 dev.off()
 
@@ -320,15 +340,20 @@ ar_strata <- subset(ar_tmp, a.vals < 16 & a.vals > 4) %>%
   ggplot(aes(x = a.vals, y = estimate, color = factor(race_title))) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
-  facet_wrap(~ dual_label, scales = "free_y") +
-  coord_cartesian(xlim = c(5,15)) +
-  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", y = "Absolute Mortality Rate", color = "Race") +
+  facet_wrap(~ dual_label) +
+  coord_cartesian(xlim = c(5,15), 
+                  ylim = c(0.02, 0.11)) +
+  labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
+       y = "Absolute Mortality Rate", 
+       color = "Race",
+       title = "TRUNCATED CALIBRATION") +
   theme_bw() +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_color_manual(values = c("#367E18", "#F57328")) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
-pdf(file = "~/Figures/ar_strata.pdf", width = 16, height = 8)
+pdf(file = "~/Figures/ar_strata_cal_trunc.pdf", width = 16, height = 8)
 ar_strata
 dev.off()
 
@@ -354,8 +379,10 @@ contrast_plot <- contr %>%
   geom_pointrange(aes(ymin = 100*lower, ymax = 100*upper), position = position_dodge(width = 0.4)) +
   geom_hline(yintercept = 0) +
   theme_bw() +
-  labs(x = "", y = "Risk Difference (%)") +
-  guides(color = guide_legend(title = ~ PM[2.5]*" Contrasts")) +
+  labs(x = "", 
+       y = "Risk Difference (%)",
+       color = ~ PM[2.5]*" Contrasts",
+       title = "TRUNCATED CALIBRATION") +
   theme_bw() +
   theme(legend.position = c(0.15, 0.85),
         legend.background = element_rect(colour = "black"),
@@ -367,6 +394,6 @@ contrast_plot <- contr %>%
                                 ~"12 "*mu*g*"/"*m^3*" vs. 9 "*mu*g*"/"*m^3,
                                 ~"12 "*mu*g*"/"*m^3*" vs. 8 "*mu*g*"/"*m^3))
 
-pdf(file = "~/Figures/contrast_plot.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/contrast_plot_cal_trunc.pdf", width = 10, height = 8)
 contrast_plot
 dev.off()
