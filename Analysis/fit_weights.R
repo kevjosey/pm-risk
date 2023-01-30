@@ -15,7 +15,7 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 
-### Fit Balancing and GPS Weights
+### Fit Balancing Weights
 
 # Save Location
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/'
@@ -93,7 +93,7 @@ create_strata <- function(aggregate_data,
   phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
   phat[phat < 0] <- .Machine$double.eps
   
-  x$ipw <- phat/pihat
+  x$ipw <- phat/pihat # LM GPS
   
   ## Calibration Weights
   
@@ -103,7 +103,7 @@ create_strata <- function(aggregate_data,
   mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
                    target = c(length(a), rep(0, ncol(x.mat) + 1)))
   
-  x$cal <- mod$weights
+  x$cal <- mod$weights # CALIBRATION
   
   # truncation
   trunc0 <- quantile(x$ipw, 0.005)
@@ -111,7 +111,7 @@ create_strata <- function(aggregate_data,
   x$ipw[x$ipw < trunc0] <- trunc0
   x$ipw[x$ipw > trunc1] <- trunc1
   
-  x$cal_trunc <- x$cal
+  x$cal_trunc <- x$cal # TRUNCATED CALIBRATION
   
   trunc0 <- quantile(x$cal, 0.005)
   trunc1 <- quantile(x$cal, 0.995)

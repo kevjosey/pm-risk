@@ -11,6 +11,8 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 
+### Plot AR and HR Exposure Responses
+
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'

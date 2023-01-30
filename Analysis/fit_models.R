@@ -42,12 +42,6 @@ for (i in 1:nrow(scenarios)) {
   cal_trunc <- wx.tmp$cal_trunc
   log.pop <- log(wx.tmp$time_count)
   
-  # factor variables (redundant)
-  wx.tmp$year <- as.factor(wx.tmp$year)
-  wx.tmp$race <- factor(wx.tmp$race)
-  wx.tmp$entry_age_break <- as.factor(wx.tmp$entry_age_break)
-  wx.tmp$followup_year <- as.factor(wx.tmp$followup_year)
-  
   # remove collinear terms and identifiers
   if (scenario$dual == "both" & scenario$race == "all") {
     w.tmp <- subset(wx.tmp, select = -c(zip, pm25, dead, time_count,

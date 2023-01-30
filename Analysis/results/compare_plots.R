@@ -3,6 +3,8 @@ library(grid)
 library(gridExtra)
 library(data.table)
 
+### Compare Past Results with New Results
+
 DR100 <- read.csv("~/Data/DR100_table.csv")[,-1]
 load("~/Data/xiao.RData"); Kevin <- xiao
 colnames(Kevin) = colnames(DR100)

@@ -18,11 +18,13 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
-### Plot G-Computation or GPS Regression Results
+### Plot G-Computation, PS Regression, and Calibration Weight Results
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_mod <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/PSReg_All/'
+dir_mod <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/'
+# dir_mod <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/'
+# dir_mod <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/CAL_All/'
 
 ar <- data.frame()
 contrast <- data.frame()

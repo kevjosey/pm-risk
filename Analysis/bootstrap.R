@@ -58,6 +58,8 @@ for (i in 1:nrow(scenarios)) {
   
   zip_data <- new_data$x
   individual_data <- new_data$w
+  individual_data$id <- paste(individual_data$zip, individual_data$year, sep = "-")
+  u.zip <- unique(individual_data$zip)
   
   boot_list <- mcapply(1:boot.iter, function(b, ...) {
     
@@ -69,7 +71,8 @@ for (i in 1:nrow(scenarios)) {
     # zip-code data
     x <- bootstrap_data(data = zip_data, index = index, u.zip = u.zip)
     a <- x$pm25
-    x.tmp <- subset(x, select = -c(zip, id, boot.id, pm25))
+    x.tmp <- subset(x, select = -c(zip, id, boot.id, pm25,
+                                   ipw, cal, cal_trunc))
     x.tmp$year <- factor(x.tmp$year)
     x.tmp <- x.tmp %>% mutate_if(is.numeric, scale)
     
@@ -91,8 +94,7 @@ for (i in 1:nrow(scenarios)) {
     
     # individual-level data
     w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
-    wx <- inner_join(subset(w.tmp, select = -c(ipw, cal, cal_trunc)),
-                     data.frame(boot.id = x$boot.id, ipw = x$ipw), by = "boot.id")
+    wx <- inner_join(w.tmp, subset(x, select = -c(id, zip, year, ipw, cal_trunc), by = "boot.id"))
     
     # factor strata variables
     wx$year <- factor(wx$year)
@@ -102,16 +104,16 @@ for (i in 1:nrow(scenarios)) {
     
     # remove collinear terms and identifiers
     if (scenario$dual == "both" & scenario$race == "all") {
-      w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, ipw))
+      w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, cal))
     } else if (scenario$dual == "both" & scenario$race != "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  race, id, boot.id, ipw))
+                                  race, id, boot.id, cal))
     } else if (scenario$dual != "both" & scenario$race == "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  dual, id, boot.id, ipw))
+                                  dual, id, boot.id, cal))
     } else if (scenario$dual != "both" & scenario$race != "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  dual, race, id, boot.id, ipw))
+                                  dual, race, id, boot.id, cal))
     }
     
     # fit gam model
@@ -119,7 +121,7 @@ for (i in 1:nrow(scenarios)) {
                          weights = wx$cal, id = wx$boot.id, w = w, a.vals = a.vals)
     
     # set bandwidth from whole data
-    target <- count_erf_boot(resid.lm = z$resid, muhat.mat = z$muhat.mat, log.pop = z$log.pop,
+    target <- count_erf_boot(resid = z$resid, muhat.mat = z$muhat.mat, log.pop = z$log.pop,
                              w.id = z$id, x.id = x$boot.id, a = a, bw = 2,
                              a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
