@@ -19,6 +19,7 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 boot.iter <- 500 # bootstrap iterations
+bw <- 2 # KWLS bandwidth
 
 ### M-out-of-N Bootstrap
 
@@ -71,53 +72,51 @@ for (i in 1:nrow(scenarios)) {
     
     # zip-code data
     x <- bootstrap_data(data = zip_data, index = index, u.zip = u.zip)
-    a <- x$pm25
-    x.tmp <- subset(x, select = -c(zip, id, boot.id, pm25,
-                                   ipw, cal, cal_trunc))
-    x.tmp$year <- factor(x.tmp$year)
+    x.tmp <- subset(x, select = -c(zip, pm25, id, boot.id, ipw, cal, cal_trunc))
     x.tmp <- x.tmp %>% mutate_if(is.numeric, scale)
     
     # fit calibration weights
     x.mat <- model.matrix(~ ., data = data.frame(x.tmp))
-    astar <- c(a - mean(a))/var(a)
-    astar2 <- c((a - mean(a))^2/var(a) - 1)
+    astar <- c(x$pm25 - mean(x$pm25))/var(x$pm25)
+    astar2 <- c((x$pm25 - mean(x$pm25))^2/var(x$pm25) - 1)
     mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
-                     target = c(length(a), rep(0, ncol(x.mat) + 1)))
-    x$cal <- mod$weights
+                     target = c(nrow(x), rep(0, ncol(x.mat) + 1)))
+    x$cal <- x$cal_trunc <- mod$weights
     
     # truncation
     trunc0 <- quantile(x$cal, 0.005)
     trunc1 <- quantile(x$cal, 0.995)
-    x$cal[x$cal < trunc0] <- trunc0
-    x$cal[x$cal > trunc1] <- trunc1
+    x$cal_trunc[x$cal < trunc0] <- trunc0
+    x$cal_trunc[x$cal > trunc1] <- trunc1
     
     ## Outcome Model
     
     # individual-level data
-    w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
-    wx <- inner_join(w.tmp, subset(x, select = -c(id, zip, year, ipw, cal_trunc), by = "boot.id"))
+    w <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
+    wx <- inner_join(w, subset(x, select = -c(id, zip, year), by = "boot.id"))
     
     # remove collinear terms and identifiers
     if (scenario$dual == "both" & scenario$race == "all") {
-      w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, cal))
+      w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, 
+                                      id, boot.id, ipw, cal, cal_trunc))
     } else if (scenario$dual == "both" & scenario$race != "all") {
-      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  race, id, boot.id, cal))
+      w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, race, 
+                                      id, boot.id, ipw, cal, cal_trunc))
     } else if (scenario$dual != "both" & scenario$race == "all") {
-      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  dual, id, boot.id, cal))
+      w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, dual, 
+                                      id, boot.id, ipw, cal, cal_trunc))
     } else if (scenario$dual != "both" & scenario$race != "all") {
-      w <- subset(wx, select = -c(zip, pm25, dead, time_count,
-                                  dual, race, id, boot.id, cal))
+      w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, dual, race, 
+                                      id, boot.id, ipw, cal, cal_trunc))
     }
     
     # fit gam model
     z <- gam_models_boot(y = wx$dead, a = wx$pm25, log.pop = log(wx$time_count), 
-                         weights = wx$cal, id = wx$boot.id, w = w, a.vals = a.vals)
+                         weights = wx$cal_trunc, id = wx$boot.id, w = w.tmp, a.vals = a.vals)
     
-    # set bandwidth from whole data
+    # set bandwidth from original analysis
     target <- count_erf_boot(resid = z$resid, muhat.mat = z$muhat.mat, log.pop = z$log.pop,
-                             w.id = z$id, x.id = x$boot.id, a = a, bw = 2,
+                             w.id = z$id, x.id = x$boot.id, a = x$pm25, bw = bw,
                              a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
     print(paste("Completed Scenario: ", i))

@@ -1,83 +1,89 @@
 # wrapper function to fit a nonparametric ERF with measurement error using kernel-weighted regression
-count_erf <- function(resid.lm, resid.cal, log.pop, muhat.mat, w.id, a, x.id,
-                      a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
-                      bw = 1, se.fit = TRUE) {	
+count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop, 
+                      muhat.mat, w.id, a, x.id, phat.vals = NULL,
+                      a.vals = seq(min(a), max(a), length.out = 100), 
+                      bw = c(1,2,3), se.fit = TRUE) {	
   
   # Separate Data into List
-  wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-  mat.list <- split(cbind(exp(log.pop), resid.lm, resid.cal, muhat.mat), w.id)
+  mat.list <- split(cbind(exp(log.pop), resid.lm, resid.cal,
+                          resid.cal_trunc, muhat.mat), w.id)
   
   # Aggregate by ZIP-code-year
   mat <- do.call(rbind, lapply(mat.list, function(vec) {
-    mat <- matrix(vec, ncol = length(a.vals) + 3)
+    mat <- matrix(vec, ncol = length(a.vals) + 4)
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  mat.new <- data.frame(wts = wts, id = names(mat.list), mat)
-  muhat.mat.new <- mat.new[,-c(1:4)]
-  mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
+  mat.pool <- data.frame(id = names(mat.list), mat)
+  mhat.vals <- colMeans(mat.pool[,-c(1:4)], na.rm = TRUE)
   resid.dat <- inner_join(mat.new[,1:4], data.frame(a = a, id = x.id), by = "id")
   resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
   
   # Pseudo-Outcomes
   resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
   resid.dat$psi.cal <- with(resid.dat, X2 + mhat)
+  resid.dat$psi.cal_trunc <- with(resid.dat, X3 + mhat)
   
-  if (is.null(phat.vals))
-    phat.vals <- rep(1, length(a.vals))
-  
-  # Integration Matrix
-  mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
-  phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
-  int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
-  
-  # Spline Regression Sensitivity
-  spl.lm <- lm(psi.lm ~ ns(a, 6), data = resid.dat)
-  spl.cal <- lm(psi.cal ~ ns(a, 6), data = resid.dat)
-  
-  # Least Squares Approximations
-  fit.lm <- lm(psi.lm ~ a, data = resid.dat)
-  fit.cal <- lm(psi.cal ~ a, data = resid.dat)
+  if (length(bw) != 3) {
+    warning("length(bandwidth) != 3")
+    bw <- rep(bw[1], 3)
+  }
   
   if (se.fit) {
     
-    # KWLS Regression
-    out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, bw = bw,
-                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    if (is.null(phat.vals)) {
+      warning("Setting phat.vals = rep(1, length(a.vals))")
+      phat.vals <- rep(1, length(a.vals))
+    }
     
-    out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, bw = bw,
-                      a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    # Integration Matrix
+    # Integration Matrix
+    mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE, 
+                       nrow = nrow(mat.poolmat.pool[,-(1:4)]))
+    phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE,
+                       nrow = nrow(mat.poolmat.pool[,-(1:4)]))
+    int.mat <- (mat.pool[,-(1:4)] - mhat.mat)*phat.mat
+    
+    # KWLS Regression
+    out.lm <- sapply(a.vals, kern_est, psi = resid.dat$psi.lm, a = resid.dat$a, 
+                     bw = bw[1], a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    out.cal <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal, a = resid.dat$a, 
+                      bw = bw[2], a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    out.cal_trunc <- sapply(a.vals, kern_est, psi = resid.dat$psi.cal_trunc, a = resid.dat$a, 
+                            bw = bw[3], a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
     
     estimate.lm <- out.lm[1,]
     variance.lm <- out.lm[2,]
     estimate.cal <- out.cal[1,]
     variance.cal <- out.cal[2,]
+    estimate.cal_trunc <- out.cal_trunc[1,]
+    variance.cal_trunc <- out.cal_trunc[2,]
     
-    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm, 
-                fit.lm = fit.lm, spl.lm = spl.lm,
+    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm,
                 estimate.cal = estimate.cal, variance.cal = variance.cal,
-                fit.cal = fit.cal, spl.cal = spl.cal))
+                estimate.cal_trunc = estimate.cal_trunc, variance.cal_trunc = variance.cal_trunc))
     
   } else {
     
-    out.lm <- approx(locpoly(resid.dat$a, resid$psi.lm, bandwidth = bw), xout = a.vals)$y
-    out.cal <- approx(locpoly(resid.dat$a, resid$psi.cal, bandwidth = bw), xout = a.vals)$y
+    # KWLS Regression
+    out.lm <- approx(locpoly(resid.dat$a, resid.dat$psi.lm, bandwidth = bw[1]), xout = a.vals)$y
+    out.cal <- approx(locpoly(resid.dat$a, resid.dat$psi.cal, bandwidth = bw[2]), xout = a.vals)$y
+    out.cal_trunc <- approx(locpoly(resid.dat$a, resid.dat$psi.cal_trunc, bandwidth = bw[3]), xout = a.vals)$y
     
-    return(list(estimate.lm = out.lm, fit.lm = fit.lm, spl.lm = spl.lm,
-                estimate.cal = out.cal, fit.cal = fit.cal, spl.cal = spl.cal))
+    return(list(estimate.lm = out.lm, estimate.cal = out.cal,
+                estimate.cal_trunc = out.cal_trunc))
     
   }
   
 }
 
-# count_erf where we ONLY consider KWLS + LM GPS
-count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
-                         a.vals = seq(min(a), max(a), length.out = 100), phat.vals = NULL, 
-                         bw = 1, se.fit = TRUE) {	
+# count_erf where we consider only one weight implementation
+count_erf_boot <- function(resid, log.pop, muhat.mat, w.id, a, x.id, phat.vals = NULL,
+                           a.vals = seq(min(a), max(a), length.out = 100), 
+                           bw = 1, se.fit = TRUE) {	
   
   # Separate Data into List
-  wts <- do.call(c, lapply(split(exp(log.pop), w.id), sum))
-  mat.list <- split(cbind(exp(log.pop), resid.lm, muhat.mat), w.id)
+  mat.list <- split(cbind(exp(log.pop), resid, muhat.mat), w.id)
   
   # Aggregate by ZIP-code-year
   mat <- do.call(rbind, lapply(mat.list, function(vec) {
@@ -85,39 +91,42 @@ count_erf_lm <- function(resid.lm, log.pop, muhat.mat, w.id, a, x.id,
     colSums(mat[,1]*mat[,-1,drop = FALSE])/sum(mat[,1])
   } ))
   
-  mat.new <- data.frame(wts = wts, id = names(mat.list), mat)
-  muhat.mat.new <- mat.new[,-c(1:3)]
-  mhat.vals <- colMeans(muhat.mat.new, na.rm = TRUE)
-  resid.dat <- inner_join(mat.new[,1:3], data.frame(a = a, id = x.id), by = "id")
+  mat.pool <- data.frame(id = names(mat.list), mat)
+  mhat.vals <- colMeans(mat.pool[,-(1:2)], na.rm = TRUE)
+  resid.dat <- inner_join(mat.pool[,1:2], data.frame(a = a, id = x.id), by = "id")
   resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
   
   # Pseudo-Outcomes
-  resid.dat$psi.lm <- with(resid.dat, X1 + mhat)
-  
-  if (is.null(phat.vals))
-    phat.vals <- rep(1, length(a.vals))
-  
-  # Integration Matrix
-  mhat.mat <- matrix(rep(mhat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
-  phat.mat <- matrix(rep(phat.vals, nrow(muhat.mat.new)), byrow = TRUE, nrow = nrow(muhat.mat.new))
-  int.mat <- (muhat.mat.new - mhat.mat)*phat.mat
+  resid.dat$psi <- with(resid.dat, X1 + mhat)
   
   if (se.fit) {
     
+    if (is.null(phat.vals)) {
+      warning("Setting phat.vals = rep(1, length(a.vals))")
+      phat.vals <- rep(1, length(a.vals))
+    }
+    
+    # Integration Matrix
+    mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE, 
+                       nrow = nrow(mat.poolmat.pool[,-(1:2)]))
+    phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE,
+                       nrow = nrow(mat.poolmat.pool[,-(1:2)]))
+    int.mat <- (mat.pool[,-(1:2)] - mhat.mat)*phat.mat
+    
     # KWLS Regression
-    out.lm <- sapply(a.vals, kern_est, psi = resid$psi.lm, a = resid.dat$a, bw = bw,
-                     a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
+    out <- sapply(a.vals, kern_est, psi = resid.dat$psi, a = resid.dat$a, 
+                  bw = bw[1], a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
     
-    estimate.lm <- out.lm[1,]
-    variance.lm <- out.lm[2,]
+    estimate <- out[1,]
+    variance <- out[2,]
     
-    return(list(estimate.lm = estimate.lm, variance.lm = variance.lm))
+    return(list(estimate = estimate, variance = variance))
     
   } else {
     
-    out.lm <- approx(locpoly(resid.dat$a, resid$psi.lm, bandwidth = bw), xout = a.vals)$y
+    out <- approx(locpoly(resid.dat$a, resid.dat$psi, bandwidth = bw[1]), xout = a.vals)$y
     
-    return(list(estimate.lm = out.lm))
+    return(list(estimate = out))
     
   }
   
@@ -166,7 +175,7 @@ kern_est <- function(a.new, a, psi, bw, weights = NULL, se.fit = FALSE, a.vals =
   
 }
 
-## k-fold cross validated bandwidth
+## k-fold cross-validated bandwidth
 cv_bw <- function(a, psi, weights = NULL, folds = 5, bw.seq = seq(0.1, 5, by = 0.1)) {
   
   if (is.null(weights))
@@ -205,7 +214,7 @@ w.fn <- function(h, a, a.vals) {
     a.std <- (a - a.tmp) / h
     k.std <- dnorm(a.std) / h
     return(mean(a.std^2 * k.std) * (dnorm(0) / h) /
-      (mean(k.std) * mean(a.std^2 * k.std) - mean(a.std * k.std)^2))
+             (mean(k.std) * mean(a.std^2 * k.std) - mean(a.std * k.std)^2))
   })
   
   return(w.avals / length(a))
@@ -222,5 +231,5 @@ cts.eff.fn <- function(psi, a, h) {
 
 risk.fn <- function(h, psi, a, a.vals) {
   hats <- hatvals(h = h, a = a, a.vals = a.vals)
-  mean(((psi - cts.eff.fn(psi = psi, a = a, h = h)) / (1 - hats))^2)
+  sqrt(mean(((psi - cts.eff.fn(psi = psi, a = a, h = h)) / (1 - hats))^2, na.rm = TRUE))
 }

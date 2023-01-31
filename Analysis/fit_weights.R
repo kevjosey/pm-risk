@@ -60,26 +60,21 @@ create_strata <- function(aggregate_data,
   # ZIP Code Covariates
   zcov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
             "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
-  zip.tmp <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
-                        model.matrix(~ ., data = aggregate_data[,zcov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
+  x <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
+                  model.matrix(~ ., data = aggregate_data[,zcov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
   
-  # remove next two lines for full population weights
-  u.zip.year <- unique(paste(w$zip, w$year, sep = "-"))
-  x <- subset(zip.tmp, paste(zip, year, sep = "-") %in% u.zip.year)
-  
-  a <- x$pm25
   x.tmp <- subset(x, select = -c(zip, pm25))
   x.tmp$year <- factor(x.tmp$year)
   x.tmp <- x.tmp %>% mutate_if(is.numeric, scale)
   
   ## LM GPS
   
-  pimod <- lm(a ~ ., data = data.frame(a = a, x.tmp))
+  pimod <- lm(a ~ ., data = data.frame(a = x$pm25, x.tmp))
   pimod.vals <- c(pimod$fitted.values)
   pimod.sd <- sigma(pimod)
   
   # nonparametric density
-  a.std <- c(a - pimod.vals) / pimod.sd
+  a.std <- c(x$pm25 - pimod.vals) / pimod.sd
   dens <- density(a.std)
   pihat <- approx(x = dens$x, y = dens$y, xout = a.std)$y / pimod.sd
   
@@ -90,7 +85,7 @@ create_strata <- function(aggregate_data,
   })
   
   phat.vals <- colMeans(pihat.mat, na.rm = TRUE)
-  phat <- predict(smooth.spline(a.vals, phat.vals), x = a)$y
+  phat <- predict(smooth.spline(a.vals, phat.vals), x = x$pm25)$y
   phat[phat < 0] <- .Machine$double.eps
   
   x$ipw <- phat/pihat # LM GPS
@@ -98,10 +93,10 @@ create_strata <- function(aggregate_data,
   ## Calibration Weights
   
   x.mat <- model.matrix(~ ., data = data.frame(x.tmp))
-  astar <- c(a - mean(a))/var(a)
-  astar2 <- c((a - mean(a))^2/var(a) - 1)
+  astar <- c(x$pm25 - mean(x$pm25))/var(x$pm25)
+  astar2 <- c((x$pm25 - mean(x$pm25))^2/var(x$pm25) - 1)
   mod <- calibrate(cmat = cbind(1, x.mat*astar, astar2), 
-                   target = c(length(a), rep(0, ncol(x.mat) + 1)))
+                   target = c(nrow(x), rep(0, ncol(x.mat) + 1)))
   
   x$cal <- mod$weights # CALIBRATION
   

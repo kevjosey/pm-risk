@@ -22,7 +22,7 @@ a.vals <- seq(2, 31, length.out = 146)
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/'
 
-for (i in 1:nrow(scnearios)) {
+for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
@@ -32,13 +32,6 @@ for (i in 1:nrow(scnearios)) {
   
   # merge in ZIP-level covariates
   wx <- inner_join(w, x, by = c("zip", "year"))
-  
-  # extract data components
-  w.id <- wx$id
-  y <- wx$dead
-  a <- wx$pm25
-  w.id <- wx$id
-  log.pop <- log(wx$time_count)
   
   # remove collinear terms and identifiers
   if (scenario$dual == "both" & scenario$race == "all") {
@@ -51,14 +44,9 @@ for (i in 1:nrow(scnearios)) {
     w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, dual, race, id))
   }
   
-  rm(w, x, wx); gc()
-  
-  ybar <- y/exp(log.pop)
-  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
-  
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop), model = FALSE,
-               data = data.frame(ybar = ybar, a = a, w.tmp), family = quasipoisson())
+  mumod <- glm(y ~ ns(a, 6) + . - a, offset = log(wx$time_count), model = FALSE,
+               data = data.frame(y = wx$dead, a = wx$pm25, w.tmp), family = quasipoisson())
   
   # predictions along a.vals
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
@@ -69,7 +57,7 @@ for (i in 1:nrow(scnearios)) {
   })
   
   # Separate Data into List
-  mat.list <- split(cbind(exp(log.pop), muhat.mat), w.id)
+  mat.list <- split(cbind(wx$time_count, muhat.mat), wx$id)
   
   # Aggregate by ZIP-code-year
   mat <- do.call(rbind, lapply(mat.list, function(vec) {
@@ -87,6 +75,6 @@ for (i in 1:nrow(scnearios)) {
   
   save(mumod, mhat.vals, a.vals, file = paste0(dir_out, scenario$dual, "_", scenario$race, ".RData"))
   
-  rm(mumod, muhat.mat, mat.list, mat); gc()
+  rm(w, x, wx, mumod, muhat.mat, mat.list, mat); gc()
   
 }
