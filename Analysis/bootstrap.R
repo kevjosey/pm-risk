@@ -61,11 +61,11 @@ for (i in 1:nrow(scenarios)) {
   zip_data <- new_data$x
   individual_data <- new_data$w
   individual_data$id <- paste(individual_data$zip, individual_data$year, sep = "-")
-  u.zip <- unique(individual_data$zip)
+  u.zip <- unique(individual_data$zip)    
+  m <- length(u.zip)/log(length(u.zip)) # for m out of n bootstrap
   
   boot_list <- mclapply(1:boot.iter, function(b, ...) {
-    
-    m <- length(u.zip)/log(length(u.zip)) # for m out of n bootstrap
+
     index <- sample(1:length(u.zip), m, replace = TRUE)  # initialize bootstrap  index
     
     ## GPS Model

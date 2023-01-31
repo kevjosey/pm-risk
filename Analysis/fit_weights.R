@@ -60,8 +60,8 @@ create_strata <- function(aggregate_data,
   # ZIP Code Covariates
   zcov <- c("pm25", "mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome", "medianhousevalue", "poverty", "education",
             "popdensity", "pct_owner_occ", "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "region")
-  x <- data.table(zip = aggregate_data$zip, year = aggregate_data$year,
-                  model.matrix(~ ., data = aggregate_data[,zcov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
+  x <- data.table(zip = sub_data$zip, year = sub_data$year,
+                  model.matrix(~ ., data = sub_data[,zcov])[,-1])[,lapply(.SD, min), by = c("zip", "year")]
   
   x.tmp <- subset(x, select = -c(zip, pm25))
   x.tmp$year <- factor(x.tmp$year)
