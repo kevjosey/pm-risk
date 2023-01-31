@@ -16,13 +16,13 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 
-### G-Computation Poisson Model
+### Calibration Weighting Only
 
 # Save Location
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/CAL_All/'
 
-for (i in 1:nrow(scnearios)) {
+for (i in nrow(scenarios):1) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
@@ -37,28 +37,25 @@ for (i in 1:nrow(scnearios)) {
   w.id <- wx$id
   y <- wx$dead
   a <- wx$pm25
-  w.id <- wx$id
+  cal_trunc <- wx$cal_trunc
   log.pop <- log(wx$time_count)
   
   # remove collinear terms and identifiers
   if (scenario$dual == "both" & scenario$race == "all") {
-    w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, id))
+    w.tmp <- subset(wx, select = c(female, entry_age_break, followup_year, year, dual, race))
   } else if (scenario$dual == "both" & scenario$race != "all") {
-    w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, race, id))
+    w.tmp <- subset(wx, select = c(female, entry_age_break, followup_year, year, dual))
   } else if (scenario$dual != "both" & scenario$race == "all") {
-    w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, dual, id))
+    w.tmp <- subset(wx, select = c(female, entry_age_break, followup_year, year, race))
   } else if (scenario$dual != "both" & scenario$race != "all") {
-    w.tmp <- subset(wx, select = -c(zip, pm25, dead, time_count, dual, race, id))
+    w.tmp <- subset(wx, select = c(female, entry_age_break, followup_year, year))
   }
   
   rm(w, x, wx); gc()
   
-  ybar <- y/exp(log.pop)
-  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
-  
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop), model = FALSE,
-               data = data.frame(ybar = ybar, a = a, w.tmp), family = quasipoisson())
+  mumod <- glm(y ~ ns(a, 6) + . - a + offset(log.pop), weights = cal_trunc, model = FALSE,
+               data = data.frame(y = y, a = a, w.tmp), family = quasipoisson())
   
   # predictions along a.vals
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {

@@ -23,6 +23,7 @@ boot.iter <- 500 # bootstrap iterations
 ### M-out-of-N Bootstrap
 
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
 
 # function for getting cluster bootstrap data
 # need to tweak to be more general
@@ -61,7 +62,7 @@ for (i in 1:nrow(scenarios)) {
   individual_data$id <- paste(individual_data$zip, individual_data$year, sep = "-")
   u.zip <- unique(individual_data$zip)
   
-  boot_list <- mcapply(1:boot.iter, function(b, ...) {
+  boot_list <- mclapply(1:boot.iter, function(b, ...) {
     
     m <- length(u.zip)/log(length(u.zip)) # for m out of n bootstrap
     index <- sample(1:length(u.zip), m, replace = TRUE)  # initialize bootstrap  index
@@ -96,12 +97,6 @@ for (i in 1:nrow(scenarios)) {
     w.tmp <- bootstrap_data(data = individual_data, index = index, u.zip = u.zip)
     wx <- inner_join(w.tmp, subset(x, select = -c(id, zip, year, ipw, cal_trunc), by = "boot.id"))
     
-    # factor strata variables
-    wx$year <- factor(wx$year)
-    wx$entry_age_break <- factor(wx$entry_age_break)
-    wx$followup_year <- factor(wx$followup_year)
-    wx$race <- factor(wx$race)
-    
     # remove collinear terms and identifiers
     if (scenario$dual == "both" & scenario$race == "all") {
       w <- subset(wx, select = -c(zip, pm25, dead, time_count, id, boot.id, cal))
@@ -126,15 +121,14 @@ for (i in 1:nrow(scenarios)) {
                              a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
     
     print(paste("Completed Scenario: ", i))
-    return(target$estimate.lm)
+    return(target$estimate)
     
-  }, mc.cores = 16)
+  }, mc.cores = 8)
   
   boot_mat <- do.call(rbind, boot_list)
   colnames(boot_mat) <- a.vals
   
   # save output
   save(boot_mat, file = paste0(dir_out, scenario$dual, "_", scenario$race, "_boot.RData"))
-  rm(model_data, target, muhat.mat); gc()
   
 }

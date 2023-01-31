@@ -24,7 +24,7 @@ a.vals <- seq(2, 31, length.out = 146)
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data/'
 
-for (i in 1:nrow(scenarios)) {
+for (i in 1:nrow(scnearios)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
