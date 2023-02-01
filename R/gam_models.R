@@ -5,11 +5,13 @@ gam_models <- function(y, a, w, ipw, cal, cal_trunc, id,
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
   
-  w <- data.frame(w)
+  # need to model residuals as rates
+  ybar <- y/exp(log.pop)
+  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(y ~ ns(a, 6) + . - a, offset = log.pop, model = FALSE,
-               data = data.frame(y = y, a = a, w), family = quasipoisson())
+  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop), model = FALSE,
+               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   
   # predictions along a.vals
@@ -19,10 +21,6 @@ gam_models <- function(y, a, w, ipw, cal, cal_trunc, id,
     predict(mumod, newdata = wa.tmp, type = "response")
     
   })
-  
-  # need to model residuals as rates
-  ybar <- y/exp(log.pop)
-  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # pseudo outcome
   resid.lm <- c(ybar - muhat)*ipw
@@ -43,11 +41,12 @@ gam_models_boot <- function(y, a, w, weights, id, a.vals, log.pop = NULL, trunc 
   if (is.null(log.pop))
     log.pop <- rep(0, nrow(x))
   
-  w <- data.frame(w)
+  ybar <- y/exp(log.pop)
+  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(y ~ ns(a, 6) + . - a, offset = log.pop, model = FALSE,
-               data = data.frame(y = y, a = a, w), family = quasipoisson())
+  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop), model = FALSE,
+               data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   
   # predictions along a.vals
@@ -57,9 +56,6 @@ gam_models_boot <- function(y, a, w, weights, id, a.vals, log.pop = NULL, trunc 
     predict(mumod, newdata = wa.tmp, type = "response")
     
   })
-  
-  ybar <- y/exp(log.pop)
-  ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # pseudo outcome
   resid <- c(ybar - muhat)*weights

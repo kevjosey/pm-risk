@@ -22,7 +22,7 @@ a.vals <- seq(2, 31, length.out = 146)
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/CAL_All/'
 
-for (i in 2) {
+for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
@@ -46,14 +46,14 @@ for (i in 2) {
   
   # estimate nuisance outcome model with glm + splines
   mumod <- glm(y ~ ns(a, 6) + . - a, offset = log(wx$time_count), weights = wx$cal_trunc, 
-               model = FALSE, data = data.frame(y = wx$dead, a = wx$pm25, w.tmp), 
+               model = FALSE, data = data.frame(y = wx$dead, a = wx$pm25, w.tmp),
                family = quasipoisson())
   
   # predictions along a.vals
   muhat.mat <- sapply(a.vals, function(a.tmp, ...) {
     
     wa.tmp <- data.frame(a = a.tmp, w.tmp)
-    predict(mumod, newdata = wa.tmp, type = "response")
+    predict(mumod, newdata = wa.tmp, type = "response")/wx$time_count
     
   })
   

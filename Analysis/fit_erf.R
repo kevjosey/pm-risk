@@ -17,6 +17,7 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 bw.seq <- seq(0.1, 3, by = 0.1)
+# bw <- c(2,2,2)
 
 ### Fit Exposure Responses from Pseudo Outcomes
 
@@ -31,11 +32,11 @@ for (i in 1:nrow(scenarios)) {
   scenario <- scenarios[i,]
   load(paste0(dir_mod, scenario$dual, "_", scenario$race, ".RData"))
   
-  # leave-one-out cross validation
+  # # leave-one-out cross validation
   if (i == 1) {
     
     # Separate Data into List
-    mat.list <- with(model_data, split(cbind(exp(log.pop), resid.lm, resid.cal, 
+    mat.list <- with(model_data, split(cbind(exp(log.pop), resid.lm, resid.cal,
                                              resid.cal_trunc, muhat.mat), id))
     
     # Aggregate by ZIP-code-year

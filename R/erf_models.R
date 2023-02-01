@@ -16,7 +16,7 @@ count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop,
   
   mat.pool <- data.frame(id = names(mat.list), mat)
   mhat.vals <- colMeans(mat.pool[,-c(1:4)], na.rm = TRUE)
-  resid.dat <- inner_join(mat.new[,1:4], data.frame(a = a, id = x.id), by = "id")
+  resid.dat <- inner_join(mat.pool[,1:4], data.frame(a = a, id = x.id), by = "id")
   resid.dat$mhat <- predict(smooth.spline(a.vals, mhat.vals), x = resid.dat$a)$y
   
   # Pseudo-Outcomes
@@ -37,11 +37,10 @@ count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop,
     }
     
     # Integration Matrix
-    # Integration Matrix
     mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE, 
-                       nrow = nrow(mat.poolmat.pool[,-(1:4)]))
+                       nrow = nrow(mat.pool[,-(1:4)]))
     phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE,
-                       nrow = nrow(mat.poolmat.pool[,-(1:4)]))
+                       nrow = nrow(mat.pool[,-(1:4)]))
     int.mat <- (mat.pool[,-(1:4)] - mhat.mat)*phat.mat
     
     # KWLS Regression
@@ -108,9 +107,9 @@ count_erf_boot <- function(resid, log.pop, muhat.mat, w.id, a, x.id, phat.vals =
     
     # Integration Matrix
     mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE, 
-                       nrow = nrow(mat.poolmat.pool[,-(1:2)]))
+                       nrow = nrow(mat.pool[,-(1:2)]))
     phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE,
-                       nrow = nrow(mat.poolmat.pool[,-(1:2)]))
+                       nrow = nrow(mat.pool[,-(1:2)]))
     int.mat <- (mat.pool[,-(1:2)] - mhat.mat)*phat.mat
     
     # KWLS Regression

@@ -58,9 +58,12 @@ for (i in 1:nrow(scenarios)) {
     w.tmp <- subset(wx, select = c(id, female, entry_age_break, followup_year, year))
   }
   
+  # outcome rates
+  wx$ybar <- wx$dead/wx$time_count
+  
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(y ~ ns(a, 6)*gps + . - a, offset = log(wx$time_count), model = FALSE,
-               data = data.frame(y = wx$dead, a = wx$pm25, gps = wx$gps, w.tmp[,-1]), 
+  mumod <- glm(ybar ~ ns(a, 6)*gps + . - a, weights = wx$time_count, model = FALSE,
+               data = data.frame(ybar = wx$ybar, a = wx$pm25, gps = wx$gps, w.tmp[,-1]), 
                family = quasipoisson())
   
   # predictions along a.vals

@@ -19,7 +19,7 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 boot.iter <- 500 # bootstrap iterations
-bw <- 2 # KWLS bandwidth
+bw <- 1.8 # KWLS bandwidth
 
 ### M-out-of-N Bootstrap
 
@@ -61,11 +61,11 @@ for (i in 1:nrow(scenarios)) {
   zip_data <- new_data$x
   individual_data <- new_data$w
   individual_data$id <- paste(individual_data$zip, individual_data$year, sep = "-")
-  u.zip <- unique(individual_data$zip)    
+  u.zip <- unique(individual_data$zip)
   m <- length(u.zip)/log(length(u.zip)) # for m out of n bootstrap
   
   boot_list <- mclapply(1:boot.iter, function(b, ...) {
-
+    
     index <- sample(1:length(u.zip), m, replace = TRUE)  # initialize bootstrap  index
     
     ## GPS Model
