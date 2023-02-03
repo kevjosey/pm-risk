@@ -10,7 +10,7 @@ load("~/Data/xiao.RData"); Kevin <- xiao
 colnames(Kevin) = colnames(DR100)
 
 DR100_table <- rbind(DR100, Kevin)
-DR100_table <- subset(DR100_table, !(Methods %in% c("CAL", "CAL_TRUNC", "Doubly Robust")))
+DR100_table <- subset(DR100_table, !(Methods %in% c("LM", "CAL", "Doubly Robust")))
 
 # standard errors
 DR100_table$SE <- (DR100_table$ERC - DR100_table$lower)/1.96
@@ -38,22 +38,22 @@ hr_compare <- ggplot(data=plot_dat, aes(x=a.vals, y = hr, color = Methods)) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = hr.lower, ymax = hr.upper), alpha = 0.2, linetype = "dotted") +
   geom_hline(yintercept = 1, linetype = "dotted") +
+  geom_segment(x = 12, y = 0.7, xend = 12, yend = 1, linetype = "dotted", color = "black") +
   theme_bw() +
   theme(legend.position = c(0.7, 0.2),
         legend.background = element_rect(colour = "black"),
         plot.title = element_text(hjust = 0.5, face = "bold")) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
-       y = "Hazard Ratio",
-       title = "LM GPS") +
+       y = "Hazard Ratio") +
   coord_cartesian(xlim = c(5,13), 
                   ylim = c(0.88, 1.02)) +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
-                     breaks = c("LM", "Matching")) +
+                     breaks = c("CAL_TRUNC", "Matching")) +
   scale_y_continuous(breaks = c(0.88,0.89,0.9,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,1,1.01,1.02)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13))
 
-pdf(file = "~/Figures/hr_compare_lm.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/hr_compare.pdf", width = 10, height = 8)
 hr_compare
 dev.off()
 
@@ -66,17 +66,16 @@ ar_compare <- ggplot(data = plot_dat, aes(x = a.vals, y = ERC, color = Methods))
         legend.background = element_rect(colour = "black"),
         plot.title = element_text(hjust = 0.5, face = "bold")) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
-       y = "Mortality Rate",
-       title = "LM GPS") +
+       y = "Mortality Rate") +
   coord_cartesian(xlim = c(5,15), 
                   ylim = c(0.044,0.052)) +
   scale_color_manual(values=c("blue", "red"),
                      labels = c("Doubly Robust", "Matching"),
-                     breaks = c("LM", "Matching")) +
+                     breaks = c("CAL_TRUNC", "Matching")) +
   scale_y_continuous(breaks = c(0.044,0.045,0.046,0.047,0.048,0.049,0.05,0.051,0.052)) +
   scale_x_continuous(breaks = c(5,6,7,8,9,10,11,12,13,14,15))
 
 
-pdf(file = "~/Figures/ar_compare_lm.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/ar_compare.pdf", width = 10, height = 8)
 ar_compare
 dev.off()

@@ -12,13 +12,13 @@ set.seed(42)
 
 # scenarios
 scenarios <- expand.grid(dual = c("both", "high", "low"), 
-                         race = c("all", "white", "black"))[-(2:3),]
+                         race = c("all", "white", "black"))
 # scenarios <- expand.grid(dual = c("both", "high", "low"), 
 #                          race = c("asian", "hispanic", "other"))
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
-boot.iter <- 500 # bootstrap iterations
+boot.iter <- 1000 # bootstrap iterations
 bw <- 1.8 # KWLS bandwidth
 
 ### M-out-of-N Bootstrap
@@ -53,7 +53,7 @@ bootstrap_data <- function(data, index, u.zip) {
 }
 
 # RUN IT!
-for (i in 1:nrow(scenarios)) {
+for (i in c(4:5)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
