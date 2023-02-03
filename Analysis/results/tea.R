@@ -13,7 +13,7 @@ a.vals <- seq(2, 31, length.out = 146)
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All_New/'
+dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
 
 tea_8 <- tea_9 <- tea_10 <- tea_11 <- tea_12 <- data.frame()
 
@@ -32,23 +32,28 @@ for (i in 1:nrow(scenarios)) {
   # QD
   scenario <- scenarios[i,]
   load(paste0(dir_out, scenario$dual, "_", scenario$race, ".RData"))
+  load(paste0(dir_out, scenario$dual, "_", scenario$race, "_boot.RData"))
+  
+  u.zip <- unique(individual_data$zip)
+  m <- 1/log(length(u.zip)) # for m out of n bootstrap
+  est_data$se.cal_trunc <- apply(boot_mat, 2, sd, na.rm = T)*sqrt(m)
   
   w <- data.table(id = individual_data$id, dead = individual_data$dead, time_count = individual_data$time_count)[
     ,lapply(.SD, sum), by = c("id")]
   
   events <- inner_join(subset(zip_data, select = c(id,pm25)), w, by = c("id"))
   
-  tea_tmp_8 <- with(subset(events, pm25 > 8), sum(dead - time_count*as.numeric(est_data[idx8,5])))
-  tea_tmp_9 <- with(subset(events, pm25 > 9), sum(dead - time_count*as.numeric(est_data[idx9,5])))
-  tea_tmp_10 <- with(subset(events, pm25 > 10), sum(dead - time_count*as.numeric(est_data[idx10,5])))
-  tea_tmp_11 <- with(subset(events, pm25 > 11), sum(dead - time_count*as.numeric(est_data[idx11,5])))
-  tea_tmp_12 <- with(subset(events, pm25 > 12), sum(dead - time_count*as.numeric(est_data[idx12,5])))
+  tea_tmp_8 <- with(subset(events, pm25 > 8), sum(dead - time_count*as.numeric(est_data[idx8,6])))
+  tea_tmp_9 <- with(subset(events, pm25 > 9), sum(dead - time_count*as.numeric(est_data[idx9,6])))
+  tea_tmp_10 <- with(subset(events, pm25 > 10), sum(dead - time_count*as.numeric(est_data[idx10,6])))
+  tea_tmp_11 <- with(subset(events, pm25 > 11), sum(dead - time_count*as.numeric(est_data[idx11,6])))
+  tea_tmp_12 <- with(subset(events, pm25 > 12), sum(dead - time_count*as.numeric(est_data[idx12,6])))
   
-  tea_var_8 <- with(subset(events, pm25 > 8), sum(est_data[idx8,6]*time_count^2))
-  tea_var_9 <- with(subset(events, pm25 > 9), sum(est_data[idx8,6]*time_count^2))
-  tea_var_10 <- with(subset(events, pm25 > 10), sum(est_data[idx8,6]*time_count^2))
-  tea_var_11 <- with(subset(events, pm25 > 11), sum(est_data[idx8,6]*time_count^2))
-  tea_var_12 <- with(subset(events, pm25 > 12), sum(est_data[idx8,6]*time_count^2))
+  tea_var_8 <- with(subset(events, pm25 > 8), sum(m*var(boot_mat[,idx8])*time_count^2))
+  tea_var_9 <- with(subset(events, pm25 > 9), sum(m*var(boot_mat[,idx9])*time_count^2))
+  tea_var_10 <- with(subset(events, pm25 > 10), sum(m*var(boot_mat[,idx10])*time_count^2))
+  tea_var_11 <- with(subset(events, pm25 > 11), sum(m*var(boot_mat[,idx11])*time_count^2))
+  tea_var_12 <- with(subset(events, pm25 > 12), sum(m*var(boot_mat[,idx12])*time_count^2))
   
   tea_lower_8 <- tea_tmp_8 - 1.96*sqrt(tea_var_8)
   tea_lower_9 <- tea_tmp_9 - 1.96*sqrt(tea_var_9)

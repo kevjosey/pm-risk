@@ -38,11 +38,9 @@ add_death <- function(x, w = rep(1, length(x)), nm_var, ndig = 2){
 dir_data_qd = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
 
 # scenarios
-scenarios <- expand.grid(dual = c(0,1,2), race = c("all","white","black"), sex = c(0,1,2),
-                         age = c("all", "[65,75)", "[75,85)", "[85,95)", "[95,125)"))
-scenarios$dual <- as.numeric(scenarios$dual)
+scenarios <- expand.grid(dual = c("both", "low", "high"), race = c("all","white", "black"))
+scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
-scenarios$age <- as.character(scenarios$age)
 
 for (i in 1:nrow(scenarios)){
   
@@ -50,12 +48,10 @@ for (i in 1:nrow(scenarios)){
   
   scenario <- scenarios[i,]
   
-  load(paste0(dir_data_qd, scenario$dual, "_", scenario$race, "_qd.RData"))
+  load(paste0(dir_data_qd, scenario$dual, "_", scenario$race, ".RData"))
   cohort.tmp <- setDT(new_data$w)
   zip.tmp <- setDT(new_data$x)
-  
-  if (scenario$age != "all")
-    cohort.tmp <- subset(cohort.tmp, age_break == scenario$age)
+  cohort.tmp$followup_year <- as.numeric(as.character(cohort.tmp$followup_year))
   
   cross.tmp <- with(zip.tmp, data.frame(zip = zip, year = year, mw = 1 - (regionNORTHEAST + regionSOUTH + regionWEST),
                                         ne = regionNORTHEAST, south = regionSOUTH, west = regionWEST))
@@ -69,14 +65,17 @@ for (i in 1:nrow(scenarios)){
   table1<-c(add_cat(x = as.numeric(cohort[,female]==1),w = w.cohort, nm_var='Female', nm_level=''))
   
   ## age ##
-  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,age_break]=="[65,75)"),
+  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,entry_age_break]=="[65,75)"),
                                 w = w.cohort, nm_var='Age', nm_level='65-74'))
-  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,age_break]=="[75,85)"),
+  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,entry_age_break]=="[75,85)"),
                                 w = w.cohort, nm_var='Age', nm_level='75-84'))
-  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,age_break]=="[85,95)"),
+  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,entry_age_break]=="[85,95)"),
                                 w = w.cohort, nm_var='Age', nm_level='85-94'))
-  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,age_break]=="[95,125)"),
+  table1<-rbind(table1, add_cat(x = as.numeric(cohort[,entry_age_break]=="[95,125)"),
                                 w = w.cohort, nm_var='Age', nm_level='95+'))
+  
+  ## follow-up year ##
+  table1<-c(add_cont(x = as.numeric(cohort[,followup_year]), w = w.cohort, nm_var='Follow-up Years', nm_level=''))
   
   ## race ##
   table1<-rbind(table1,c(add_cat(x = as.numeric(cohort[,race]==1),
@@ -110,8 +109,7 @@ for (i in 1:nrow(scenarios)){
   
   colnames(table1) <- c("Variable", "Level", "Rows", "N", "%")
   
-  write_csv(data.frame(table1), path = paste0('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Tables/table1_',
-                                              scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
+  write_csv(data.frame(table1), path = paste0('~/Tables/table1_', scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
   
   # Table 2 -----------------------------------------------------------------
   
@@ -154,7 +152,6 @@ for (i in 1:nrow(scenarios)){
   
   colnames(table2) <- c("Variable", "Level", "Rows", "Mean", "SD")
   
-  write_csv(data.frame(table2), path = paste0('/n/dominici_nsaph_l3/projects/kjosey_pm25-mortality-np_erc_strata/Tables/table2_',
-                                              scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
+  write_csv(data.frame(table2), path = paste0('~/Tables/table2_', scenario$dual, "_", scenario$race, "_", scenario$age, ".csv"))
   
 }
