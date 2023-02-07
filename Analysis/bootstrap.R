@@ -53,7 +53,7 @@ bootstrap_data <- function(data, index, u.zip) {
 }
 
 # RUN IT!
-for (i in c(4:5)) {
+for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))

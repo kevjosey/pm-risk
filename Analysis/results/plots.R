@@ -41,7 +41,7 @@ for (i in 1:nrow(scenarios)) {
   u.zip <- unique(individual_data$zip)
   m <- 1/log(length(u.zip)) # for m out of n bootstrap
   est_data$se.cal_trunc <- apply(boot_mat, 2, sd, na.rm = T)*sqrt(m)
-  perm_mat <- boot_mat[sample(1:nrow(boot_mat), size = nrow(boot_mat) replace = FALSE), ]
+  perm_mat <- boot_mat[sample(1:nrow(boot_mat), size = nrow(boot_mat), replace = FALSE), ]
   
   if (i == 1) {
     
@@ -199,7 +199,7 @@ for (i in 1:nrow(scenarios)) {
 
 # make nice labels
 prop$race_label <- ifelse(prop$race == "all", "", ifelse(prop$race == "white", " White", " Black"))
-prop$dual_label <- ifelse(prop$dual == "both", "All", ifelse(prop$dual == "low", "Low SEP", "High SEP"))
+prop$dual_label <- ifelse(prop$dual == "both", "All", ifelse(prop$dual == "low", "Lower SEP", "Higher SEP"))
 
 # subset important subgroup
 prop$label <- paste(prop$dual_label, prop$race_label, sep = "")
@@ -232,7 +232,7 @@ dev.off()
 
 # nice labels
 pm$race_label <- ifelse(pm$race == "all", "", ifelse(pm$race == "white", " White", " Black"))
-pm$dual_label <- ifelse(pm$dual == "both", "All", ifelse(pm$dual == "low", "Low SEP", "High SEP"))
+pm$dual_label <- ifelse(pm$dual == "both", "All", ifelse(pm$dual == "low", "Lower SEP", "Higher SEP"))
 pm_dat <- subset(pm, race != "all" & dual != "both")
 
 exposure_plot <- pm_dat %>%
@@ -264,7 +264,7 @@ hr_plot <- hr_tmp %>%
   ggplot(aes(x = pm1, y = estimate)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "black") +
   geom_segment(x = 8, y = 0.7, xend = 8, yend = hr_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
   geom_segment(x = 9, y = 0.7, xend = 9, yend = hr_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
   geom_segment(x = 10, y = 0.7, xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
@@ -276,11 +276,11 @@ hr_plot <- hr_tmp %>%
   geom_segment(x = 3, y = hr_tmp$estimate[idx11], xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
   theme_bw() +
   coord_cartesian(xlim = c(6,12), 
-                  ylim = c(0.92, 1)) +
+                  ylim = c(0.92, 1.01)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
        y = "Hazard Ratio") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
-  scale_y_continuous(breaks = seq(0.92,1, by = 0.01)) +
+  scale_y_continuous(breaks = seq(0.92, 1.01, by = 0.01)) +
   scale_x_continuous(breaks = c(6,7,8,9,10,11,12))
 
 pdf(file = "~/Figures/hr_plot.pdf", width = 10, height = 8)
@@ -295,7 +295,6 @@ ar_plot <- ar_tmp %>%
   ggplot(aes(x = a.vals, y = estimate)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
   geom_segment(x = 8, y = -0.1, xend = 8, yend = ar_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
   geom_segment(x = 9, y = -0.1, xend = 9, yend = ar_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
   geom_segment(x = 10, y = -0.1, xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
@@ -306,11 +305,11 @@ ar_plot <- ar_tmp %>%
   geom_segment(x = 3, y = ar_tmp$estimate[idx11], xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
   theme_bw() +
   coord_cartesian(xlim = c(5,15), 
-                  ylim = c(0.044,0.052)) +
+                  ylim = c(0.044,0.051)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
        y = "Absolute Mortality Rate") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
-  scale_y_continuous(breaks = seq(0.044,0.052,by = 0.01)) +
+  scale_y_continuous(breaks = seq(0.044, 0.051, by = 0.001)) +
   scale_x_continuous(breaks = seq(5,15,by = 1))
 
 pdf(file = "~/Figures/ar_plot.pdf", width = 10, height = 8)
@@ -321,29 +320,29 @@ dev.off()
 
 ## Hazard Ratio
 
-hr$dual_label <- ifelse(hr$dual == "high", "High SEP", ifelse(hr$dual == "low", "Low SEP", "All"))
-hr$dual_label <- factor(hr$dual_label, levels = c("All", "High SEP", "Low SEP"))
-hr$race_title <- str_to_title(hr$race)
+hr$dual_label <- ifelse(hr$dual == "high", "Higher SEP", ifelse(hr$dual == "low", "Lower SEP", "All"))
+hr$dual_label <- factor(hr$dual_label, levels = c("All", "Higher SEP", "Lower SEP"))
+hr$race_label <- str_to_title(hr$race)
 
 hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
 
 hr_strata <- hr_tmp %>%
-  ggplot(aes(x = pm1, y = estimate, color = factor(race_title))) +
+  ggplot(aes(x = pm1, y = estimate, color = factor(race_label))) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
-  geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted") +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "black") +
+  geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted", color = "black") +
   facet_wrap(~ dual_label) +
-  coord_cartesian(xlim = c(6,12), 
-                  ylim = c(0.86, 1.01)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
        y = "Hazard Ratio",
        color = "Race") +
   theme_bw() +
+  coord_cartesian(xlim = c(6,12), 
+                  ylim = c(0.86, 1.02)) +
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_color_manual(values = c("#367E18", "#F57328")) +
-  scale_y_continuous(breaks = seq(0.86, 1.01, by = 0.02)) +
+  scale_y_continuous(breaks = seq(0.86, 1.02, by = 0.02)) +
   scale_x_continuous(breaks = c(6,7,8,9,10,11,12))
 
 pdf(file = "~/Figures/hr_strata.pdf", width = 16, height = 8)
@@ -352,14 +351,14 @@ dev.off()
 
 ## Mortality Rate
 
-ar$dual_label <- ifelse(ar$dual == "high", "High SEP", ifelse(ar$dual == "low", "Low SEP", "All"))
-ar$dual_label <- factor(ar$dual_label, levels = c("All", "High SEP", "Low SEP"))
-ar$race_title <- str_to_title(ar$race)
+ar$dual_label <- ifelse(ar$dual == "high", "Higher SEP", ifelse(ar$dual == "low", "Lower SEP", "All"))
+ar$dual_label <- factor(ar$dual_label, levels = c("All", "Higher SEP", "Lower SEP"))
+ar$race_label <- str_to_title(ar$race)
 
 ar_tmp <- subset(ar, race %in% c("black", "white"))
 
 ar_strata <- subset(ar_tmp, a.vals < 16 & a.vals > 4) %>%
-  ggplot(aes(x = a.vals, y = estimate, color = factor(race_title))) +
+  ggplot(aes(x = a.vals, y = estimate, color = factor(race_label))) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   facet_wrap(~ dual_label) +
@@ -380,39 +379,32 @@ dev.off()
 
 ### Contrast Plot
 
-contr <- subset(contrast, !(dual %in% c("high","low") & race == "all"))
+contr <- subset(contrast, race %in% c("black", "white"))
 contr$contrast <- factor(contr$contrast, levels = c("12 vs. 11", "12 vs. 10", "12 vs. 9", "12 vs. 8"))
-contr$race_dual <- paste0(str_to_title(contr$race), ifelse(contr$dual == "high", " -\n High SEP",
-                                                           ifelse(contr$dual == "low", " -\n Low SEP",
-                                                                  " -\n High + Low SEP")))
-
-contr$race_dual <- ifelse(contr$race_dual == "All -\n High + Low SEP", "All - High\n + Low SEP", contr$race_dual)
-contr$race_dual <- ifelse(contr$race_dual == "White -\n High + Low SEP", "White - High\n + Low SEP", contr$race_dual)
-contr$race_dual <- ifelse(contr$race_dual == "Black -\n High + Low SEP", "Black - High\n + Low SEP", contr$race_dual)
-contr$race_dual <- factor(contr$race_dual, levels = c("All - High\n + Low SEP",
-                                                      "White - High\n + Low SEP",
-                                                      "Black - High\n + Low SEP",
-                                                      "White -\n High SEP", "Black -\n High SEP",
-                                                      "White -\n Low SEP",  "Black -\n Low SEP"))
+contr$dual_label <- ifelse(contr$dual == "high", "Higher SEP",
+                           ifelse(contr$dual == "low", "Lower SEP", "All"))
+contr$race_label <- str_to_title(contr$race)
 
 contrast_plot <- contr %>%
-  ggplot(aes(x = race_dual, y = estimate, color = contrast)) +
-  geom_pointrange(aes(ymin = lower, ymax = upper), position = position_dodge(width = 0.4)) +
-  geom_hline(yintercept = 1, linetype = "dotted") +
+  ggplot(aes(x = contrast, y = 1 - estimate, color = race_label)) +
+  geom_pointrange(aes(ymin = 1 - lower, ymax = 1 - upper), 
+                  position = position_dodge(width = 0.4)) +
+  geom_hline(yintercept = 0) +
+  facet_wrap(~ dual_label) +
   theme_bw() +
-  labs(x = "", y = "Hazard Ratio",
-       color = ~ PM[2.5]*" Contrasts") +
+  labs(x = ~ PM[2.5]*" Contrasts", y = "1 - (Hazard Ratio)",
+       color = "Race", linetype = "Model") +
   theme_bw() +
-  theme(legend.position = c(0.15, 0.15),
-        legend.background = element_rect(colour = "black"),
+  coord_cartesian(ylim = c(-0.01, 0.09)) +
+  theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, face = "bold")) +
-  scale_y_continuous(breaks = seq(0.85, 1.01, by = 0.01)) +
-  scale_color_manual(values = c("#004D40", "#FFC107", "#1E88E5", "#D81B60"),
-                     labels = c(~"12 "*mu*g*"/"*m^3*" vs. 11 "*mu*g*"/"*m^3,
-                                ~"12 "*mu*g*"/"*m^3*" vs. 10 "*mu*g*"/"*m^3, 
-                                ~"12 "*mu*g*"/"*m^3*" vs. 9 "*mu*g*"/"*m^3,
-                                ~"12 "*mu*g*"/"*m^3*" vs. 8 "*mu*g*"/"*m^3))
+  scale_color_manual(values = c("#367E18", "#F57328")) +
+  scale_y_continuous(breaks = seq(-0.01, 0.09, by = 0.01)) +
+  scale_x_discrete(labels = c(~"12 vs. 11 "*mu*g*"/"*m^3,
+                              ~"12 vs. 10 "*mu*g*"/"*m^3,
+                              ~"12 vs. 9 "*mu*g*"/"*m^3,
+                              ~"12 vs. 8 "*mu*g*"/"*m^3))
 
-pdf(file = "~/Figures/contrast_plot.pdf", width = 10, height = 8)
+pdf(file = "~/Figures/contrast_plot.pdf", width = 16, height = 8)
 contrast_plot
 dev.off()
