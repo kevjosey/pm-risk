@@ -1,7 +1,7 @@
 
 # Mortality Benefits Associated with Decreasing PM<sub>2.5</sub>
 
-Assessing the EPA's recent recommendation to reduce PM<sub>2.5</sub> from 12 &mu;g/m<sup>3</sup> to 10, 9, and 8 &mu;g/m<sup>3</sup>
+Assessing the EPA's recent recommendation to reduce PM<sub>2.5</sub> from 12 &mu;g/m<sup>3</sup> to 10, 9, and 8 &mu;g/m<sup>3</sup>.
 
 ### Order of Operations:
 
