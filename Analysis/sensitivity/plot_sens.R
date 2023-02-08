@@ -25,10 +25,6 @@ dir_mod <- c('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/',
              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/',
              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/')
 
-dir_boot <- c('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/',
-              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/',
-              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/')
-
 mod <- c("Doubly Robust", "GPS as Regressor", "G-Computation")
 
 ar <- data.frame()
@@ -45,14 +41,18 @@ idx12 <- which.min(abs(a.vals - 12))
 # Load Data
 for (i in 1:nrow(scenarios)) {
   
+  scenario <- scenarios[i,]
+  
   for (j in 1:3) {
     
-    scenario <- scenarios[i,]
-    load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, ".RData"))
-    load(paste0(dir_boot[j], scenario$dual, "_", scenario$race, "_boot.RData"))
-    
-    if (j == 1)
+    if (j == 1) {
+      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, ".RData"))
+      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, "_boot.RData"))
       mhat.vals <- est_data[,6]
+    } else {
+      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, "_boot.RData"))
+      mhat.vals <- colMeans(boot_mat, na.rm = TRUE)
+    }
     
     # Replace with Bootstrap SEs
     u.zip <- unique(individual_data$zip)
@@ -214,8 +214,9 @@ dev.off()
 
 ## Stratified by Race x SEP
 
-hr$dual_label <- ifelse(hr$dual == "high", "Higher SEP", ifelse(hr$dual == "low", "Lower SEP", "All"))
-hr$dual_label <- factor(hr$dual_label, levels = c("All", "Higher SEP", "Lower SEP"))
+hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher SEP", 
+                        ifelse(hr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
+hr$dual_label <- factor(hr$dual_label, levels = c("Panel A: All", "Panel B: Higher SEP", "Panel C: Lower SEP"))
 hr$race_label <- str_to_title(hr$race)
 
 hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
@@ -250,8 +251,8 @@ dev.off()
 
 contr <- subset(contrast, race %in% c("black", "white"))
 contr$contrast <- factor(contr$contrast, levels = c("12 vs. 11", "12 vs. 10", "12 vs. 9", "12 vs. 8"))
-contr$dual_label <- ifelse(contr$dual == "high", "Higher SEP",
-                           ifelse(contr$dual == "low", "Lower SEP", "All"))
+contr$dual_label <- ifelse(contr$dual == "high", "Panel B: Higher SEP",
+                           ifelse(contr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
 contr$race_label <- str_to_title(contr$race)
 
 contrast_plot <- contr %>%

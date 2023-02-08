@@ -19,7 +19,7 @@ scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
 boot.iter <- 1000 # bootstrap iterations
-bw <- 1.8 # KWLS bandwidth
+bw <- 2 # KWLS bandwidth
 
 ### M-out-of-N Bootstrap
 

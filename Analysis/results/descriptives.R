@@ -52,26 +52,26 @@ for (i in c(1,4,7,6,5,9,8)) {
 
 f <- list.files("/n/dominici_nsaph_l3/Lab/data/ci3_health_data/medicare/mortality/1999_2016/wu/cache_data/merged_by_year_v2",
                 pattern = "\\.fst", full.names = TRUE)
-# 
+
 myvars <- c("qid","year","zip","sex","race","age","dual","entry_age_break","statecode","followup_year",
             "followup_year_plus_one","dead","pm25_ensemble","mean_bmi","smoke_rate","hispanic","pct_blk",
             "medhouseholdincome","medianhousevalue","poverty","education","popdensity", "pct_owner_occ",
             "summer_tmmx","winter_tmmx","summer_rmax","winter_rmax")
-# 
+
 national_merged2016 <- rbindlist(lapply(f, read_fst, columns = myvars, as.data.table = TRUE))
 national_merged2016$zip <- sprintf("%05d", national_merged2016$zip)
-# 
+
 NORTHEAST = c("NY","MA","PA","RI","NH","ME","VT","CT","NJ")
 SOUTH = c("DC","VA","NC","WV","KY","SC","GA","FL","AL","TN","MS","AR","MD","DE","OK","TX","LA")
 MIDWEST = c("OH","IN","MI","IA","MO","WI","MN","SD","ND","IL","KS","NE")
 WEST = c("MT","CO","WY","ID","UT","NV","CA","OR","WA","AZ","NM")
-# 
-# # create region
+
+# create region
 national_merged2016$region=ifelse(national_merged2016$state %in% NORTHEAST, "NORTHEAST",
                                   ifelse(national_merged2016$state %in% SOUTH, "SOUTH",
                                          ifelse(national_merged2016$state %in% MIDWEST, "MIDWEST",
                                                 ifelse(national_merged2016$state %in% WEST, "WEST", NA))))
-# 
+
 national_merged2016 <- national_merged2016[complete.cases(national_merged2016[,c(1:28)]) ,]
 
 ### Build Clean Aggregate Data Set - Outcomes, Exposures, Covariates, and Offsets

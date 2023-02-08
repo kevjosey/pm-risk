@@ -16,8 +16,8 @@ scenarios <- expand.grid(dual = c("both", "high", "low"),
 scenarios$dual <- as.character(scenarios$dual)
 scenarios$race <- as.character(scenarios$race)
 a.vals <- seq(2, 31, length.out = 146)
-# bw.seq <- seq(0.1, 3, by = 0.1)
-bw <- c(2,2,2)
+bw.seq <- seq(0.1, 3, by = 0.1)
+# bw <- c(2,2,2)
 
 ### Fit Exposure Responses from Pseudo Outcomes
 

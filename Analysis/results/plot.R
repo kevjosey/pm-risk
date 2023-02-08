@@ -63,9 +63,9 @@ for (i in 1:nrow(scenarios)) {
   }
   
   # average PM x Year
-  year <- individual_data$year
-  list.pm <- split(data.frame(pm = individual_data$pm25, wts = individual_data$time_count), year)
-  pm_tmp <- data.frame(pm = do.call(c, lapply(list.pm, function(df) sum(df$pm*df$wts)/sum(df$wts))),
+  year <- zip_data$year
+  list.pm <- split(data.frame(pm = zip_data$pm25), year)
+  pm_tmp <- data.frame(pm = do.call(c, lapply(list.pm, function(df) mean(df$pm))),
                        year = names(list.pm), dual = scenario$dual, race = scenario$race)
   
   # absolute risks
@@ -199,7 +199,8 @@ for (i in 1:nrow(scenarios)) {
 
 # make nice labels
 prop$race_label <- ifelse(prop$race == "all", "", ifelse(prop$race == "white", " White", " Black"))
-prop$dual_label <- ifelse(prop$dual == "both", "All", ifelse(prop$dual == "low", "Lower SEP", "Higher SEP"))
+prop$dual_label <- ifelse(prop$dual == "both", "Panel A: All",
+                          ifelse(prop$dual == "low", "Panel C: Lower SEP", "Panel B: Higher SEP"))
 
 # subset important subgroup
 prop$label <- paste(prop$dual_label, prop$race_label, sep = "")
@@ -320,8 +321,8 @@ dev.off()
 
 ## Hazard Ratio
 
-hr$dual_label <- ifelse(hr$dual == "high", "Higher SEP", ifelse(hr$dual == "low", "Lower SEP", "All"))
-hr$dual_label <- factor(hr$dual_label, levels = c("All", "Higher SEP", "Lower SEP"))
+hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher SEP", ifelse(hr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
+hr$dual_label <- factor(hr$dual_label, levels = c("Panel A: All", "Panel B: Higher SEP", "Panel C: Lower SEP"))
 hr$race_label <- str_to_title(hr$race)
 
 hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
@@ -351,8 +352,9 @@ dev.off()
 
 ## Mortality Rate
 
-ar$dual_label <- ifelse(ar$dual == "high", "Higher SEP", ifelse(ar$dual == "low", "Lower SEP", "All"))
-ar$dual_label <- factor(ar$dual_label, levels = c("All", "Higher SEP", "Lower SEP"))
+ar$dual_label <- ifelse(ar$dual == "high", "Panel B: Higher SEP", 
+                        ifelse(ar$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
+ar$dual_label <- factor(ar$dual_label, levels = c("Panel A: All", "Panel B: Higher SEP", "Panel C: Lower SEP"))
 ar$race_label <- str_to_title(ar$race)
 
 ar_tmp <- subset(ar, race %in% c("black", "white"))
@@ -381,8 +383,8 @@ dev.off()
 
 contr <- subset(contrast, race %in% c("black", "white"))
 contr$contrast <- factor(contr$contrast, levels = c("12 vs. 11", "12 vs. 10", "12 vs. 9", "12 vs. 8"))
-contr$dual_label <- ifelse(contr$dual == "high", "Higher SEP",
-                           ifelse(contr$dual == "low", "Lower SEP", "All"))
+contr$dual_label <- ifelse(contr$dual == "high", "Panel B: Higher SEP",
+                           ifelse(contr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
 contr$race_label <- str_to_title(contr$race)
 
 contrast_plot <- contr %>%
