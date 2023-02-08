@@ -3,7 +3,7 @@
 
 Assessing the EPA's recent recommendation to reduce PM<sub>2.5</sub> from 12 &mu;g/m<sup>3</sup> to 10, 9, and 8 &mu;g/m<sup>3</sup>
 
-###Order of Operations:
+### Order of Operations:
 
 1. [`Analysis/data_process.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/data_process.R) – Creates stratified data sets from Xiao data.
 2. [`Analysis/fit_weights.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_weights.R) – uses [`R/calibrate.R`](https://github.com/kevjosey/pm-risk/blob/main/R/calibrate.R) to fit nuisance weight models.
