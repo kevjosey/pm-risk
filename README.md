@@ -7,7 +7,7 @@ Assessing the EPA's recent recommendation to reduce PM<sub>2.5</sub> from 12 &mu
 
 ### Analysis
 
-The scripts described are presented in the order with which they should be run.
+The scripts described below are presented in the order with which they should be run.
 
 1. [`Analysis/data_process.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/data_process.R): Creates stratified data sets from [`National Causal`](https://github.com/NSAPH/National-Causal-Analysis) data.
 2. [`Analysis/fit_weights.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_weights.R): Applies functions from [`R/calibrate.R`](https://github.com/kevjosey/pm-risk/blob/main/R/calibrate.R) to fit nuisance inverse-probability/balancing weight models.
