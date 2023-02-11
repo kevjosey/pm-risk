@@ -7,9 +7,11 @@ Assessing the EPA's recent recommendation to reduce PM<sub>2.5</sub> from 12 &mu
 
 ### R
 
-a. [`R/calibrate.R`](https://github.com/kevjosey/pm-risk/blob/main/R/calibrate.R): Generic calibration function for fitting balancing weights. Implemented in [`Analysis/fit_weights.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_weights.R). 
-b. [`R/gam_models.R`](https://github.com/kevjosey/pm-risk/blob/main/R/gam_models.R): Wrapper functions for fitting spline outcome models (formerly generalized additive outcome models) assuming a quasi-Poisson likelihood. Functions output components used to construct the doubly-robust pseudo-outcome applied in (c). Implemented in [`Analysis/fit_models.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_models.R).
-c. [`R/erf_models.R`](https://github.com/kevjosey/pm-risk/blob/main/R/erf_models.R): Nonparametric doubly-robust estimator of the exposure response curve using the pseudo-outcomes fit with components found in (a) and (b). Implemented in [`Analysis/fit_erf.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_erf.R).
+<ol type="a">
+<li>[`R/calibrate.R`](https://github.com/kevjosey/pm-risk/blob/main/R/calibrate.R): Generic calibration function for fitting balancing weights. Implemented in [`Analysis/fit_weights.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_weights.R).</li>
+<li>[`R/gam_models.R`](https://github.com/kevjosey/pm-risk/blob/main/R/gam_models.R): Wrapper functions for fitting spline outcome models (formerly generalized additive outcome models) assuming a quasi-Poisson likelihood. Functions output components used to construct the doubly-robust pseudo-outcome applied in (c). Implemented in [`Analysis/fit_models.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_models.R).</li>
+<li>[`R/erf_models.R`](https://github.com/kevjosey/pm-risk/blob/main/R/erf_models.R): Nonparametric doubly-robust estimator of the exposure response curve using the pseudo-outcomes fit with components found in (a) and (b). Implemented in [`Analysis/fit_erf.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_erf.R).</li>
+</ol>
 
 ### Analysis
 
