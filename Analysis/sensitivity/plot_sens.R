@@ -17,7 +17,7 @@ source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/erf_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/R/calibrate.R')
 set.seed(42)
 
-### Plot G-Computation, PS Regression, and Calibration Weight Results
+### Plot G-Computation and GPS as Regressor Results
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
@@ -25,7 +25,7 @@ dir_mod <- c('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/',
              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/',
              '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/')
 
-mod <- c("Doubly Robust", "GPS as Regressor", "G-Computation")
+mod <- c("Doubly-Robust", "GPS as a Regressor", "G-Computation")
 
 ar <- data.frame()
 contrast <- data.frame()
@@ -45,14 +45,11 @@ for (i in 1:nrow(scenarios)) {
   
   for (j in 1:3) {
     
-    if (j == 1) {
-      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, ".RData"))
-      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, "_boot.RData"))
+    load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, ".RData"))
+    load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, "_boot.RData"))
+    
+    if (j == 1)
       mhat.vals <- est_data[,6]
-    } else {
-      load(paste0(dir_mod[j], scenario$dual, "_", scenario$race, "_boot.RData"))
-      mhat.vals <- colMeans(boot_mat, na.rm = TRUE)
-    }
     
     # Replace with Bootstrap SEs
     u.zip <- unique(individual_data$zip)
@@ -182,8 +179,13 @@ for (j in unique(DR100_table$Methods)) {
   
 }
 
-plot_dat$hr.lower[!(plot_dat$Methods %in% c("Matching", "Doubly Robust"))] <- NA
-plot_dat$hr.upper[!(plot_dat$Methods %in% c("Matching", "Doubly Robust"))] <- NA
+# plot_dat$hr.lower[plot_dat$Methods != c("Doubly-Robust")] <- NA
+# plot_dat$hr.upper[plot_dat$Methods != c("Doubly-Robust")] <- NA
+
+plot_dat$Methods <- factor(plot_dat$Methods, levels = c("Doubly-Robust", "Matching", 
+                                                        "G-Computation", "GPS as a Regressor"),
+                           labels = c("Doubly-Robust (Main Analysis)", "Matching (Wu et al.)", 
+                                      "G-Computation (Sensitivity)", "GPS as a Regressor (Sensitivity)"))
 
 # Hazard Ratio
 # exposure response curve
@@ -200,10 +202,12 @@ hr_compare <- plot_dat %>%
         plot.title = element_text(hjust = 0.5, face = "bold")) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
        y = "Hazard Ratio") +
-  scale_color_manual(values = c("red", "blue", "blue", "blue"),
-                     breaks = c("Matching", "Doubly Robust", "G-Computation", "GPS as Regressor")) +
-  scale_linetype_manual(values = c("solid", "solid", "dotted", "dashed"),
-                        breaks = c("Matching", "Doubly Robust", "G-Computation", "GPS as Regressor")) +
+  scale_color_manual(values = c("blue", "blue", "blue", "red"),
+                     breaks = c("Doubly-Robust (Main Analysis)", "G-Computation (Sensitivity)", 
+                                "GPS as a Regressor (Sensitivity)", "Matching (Wu et al.)")) +
+  scale_linetype_manual(values = c("solid", "dotted", "dashed", "solid"),
+                        breaks = c("Doubly-Robust (Main Analysis)", "G-Computation (Sensitivity)", 
+                                   "GPS as a Regressor (Sensitivity)", "Matching (Wu et al.)")) +
   scale_y_continuous(breaks = seq(0.88, 1.04, by = 0.02)) +
   scale_x_continuous(breaks = c(6,7,8,9,10,11,12))
 
@@ -214,14 +218,16 @@ dev.off()
 
 ## Stratified by Race x SEP
 
-hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher SEP", 
+hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher SEP",
                         ifelse(hr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
-hr$dual_label <- factor(hr$dual_label, levels = c("Panel A: All", "Panel B: Higher SEP", "Panel C: Lower SEP"))
 hr$race_label <- str_to_title(hr$race)
 
-hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
-hr_tmp$lower[hr_tmp$mod != "Doubly Robust"] <- NA
-hr_tmp$upper[hr_tmp$mod != "Doubly Robust"] <- NA
+hr_tmp1 <- hr_tmp2 <- subset(hr, race %in% c("black", "white") & pm0 == 12)
+hr_tmp1$CI <- "With Confidence Intervals"
+hr_tmp2$CI <- "Without Confidence Intervals"
+hr_tmp2$lower[hr_tmp2$mod != "Doubly-Robust"] <- NA
+hr_tmp2$upper[hr_tmp2$mod != "Doubly-Robust"] <- NA
+hr_tmp <- rbind(hr_tmp1, hr_tmp2)
 
 hr_strata <- hr_tmp %>%
   ggplot(aes(x = pm1, y = estimate, color = factor(race_label), linetype = mod)) +
@@ -229,10 +235,10 @@ hr_strata <- hr_tmp %>%
   geom_hline(yintercept = 1, linetype = "dotted") +
   geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted") +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
-  facet_wrap(~ dual_label) +
+  facet_grid(CI ~ dual_label) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
-       y = "Hazard Ratio",
-       color = "Race",
+       y = "Hazard Ratio of Mortality",
+       color = "Racial Identity",
        linetype = "Model") +
   theme_bw() +
   coord_cartesian(xlim = c(6,12), 
@@ -243,7 +249,7 @@ hr_strata <- hr_tmp %>%
   scale_y_continuous(breaks = seq(0.85, 1.01, by = 0.02)) +
   scale_x_continuous(breaks = c(6,7,8,9,10,11,12))
 
-pdf(file = "~/Figures/hr_strata_sensitivity.pdf", width = 16, height = 8)
+pdf(file = "~/Figures/hr_strata_sensitivity.pdf", width = 16, height = 12)
 hr_strata
 dev.off()
 
@@ -263,8 +269,8 @@ contrast_plot <- contr %>%
   geom_hline(yintercept = 0) +
   facet_wrap(~ dual_label) +
   theme_bw() +
-  labs(x = ~ PM[2.5]*" Contrasts", y = "1 - (Hazard Ratio)",
-       color = "Race", linetype = "Model", shape = "Model") +
+  labs(x = ~ PM[2.5]*" Contrasts", y = "1 - (Hazard Ratio of Mortality)",
+       color = "Racial Identity", linetype = "Model", shape = "Model") +
   theme_bw() +
   coord_cartesian(ylim = c(-0.01, 0.1)) +
   theme(legend.position = "bottom",

@@ -101,7 +101,7 @@ nrow(qid_data_sub)
 nrow(national_merged2016_sub)
 nrow(qid_data_sub)/nrow(qid_data)*100
 nrow(national_merged2016_sub)/nrow(national_merged2016)*100
-#mean(qid_data_sub$entry_age);sd(qid_data$entry_age)
+# mean(qid_data_sub$entry_age);sd(qid_data$entry_age)
 table(qid_data_sub$entry_age_break)/nrow(qid_data_sub)*100
 table(qid_data_sub$sex)/nrow(qid_data_sub)*100
 table(qid_data_sub$dual)/nrow(qid_data_sub)*100

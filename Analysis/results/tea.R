@@ -24,7 +24,7 @@ idx10 <- which.min(abs(a.vals - 10))
 idx11 <- which.min(abs(a.vals - 11))
 idx12 <- which.min(abs(a.vals - 12))
 
-### Create Data
+### Predict Total Events Avoided
 
 ## Hazard Ratio
 for (i in 1:nrow(scenarios)) {

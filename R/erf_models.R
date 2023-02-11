@@ -2,7 +2,7 @@
 count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop, 
                       muhat.mat, w.id, a, x.id, phat.vals = NULL,
                       a.vals = seq(min(a), max(a), length.out = 100), 
-                      bw = c(1,2,3), se.fit = TRUE) {	
+                      bw = c(2,2,2), se.fit = TRUE) {	
   
   # Separate Data into List
   mat.list <- split(cbind(exp(log.pop), resid.lm, resid.cal,

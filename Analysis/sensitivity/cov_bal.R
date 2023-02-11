@@ -49,6 +49,10 @@ bal_dat <- function(a, x, weights){
   
 }
 
+# Standalone Plots + ESS
+
+ess <- NULL
+
 for (i in 1:nrow(scenarios)) {
   
   scenario <- scenarios[i,]
@@ -63,10 +67,16 @@ for (i in 1:nrow(scenarios)) {
   bdat_3$adjust <- "Calibration"
   bdat_4$adjust <- "Truncated Calibration"
   
-  df <- rbind(bdat_1, bdat_2, bdat_3, bdat_4)
-  df$adjust <- factor(df$adjust, levels = c("Unadjusted", "LM", "Calibration", "Truncated Calibration"))
+  df <- rbind(bdat_1, bdat_4)
+  df$adjust <- factor(df$adjust, levels = c("Unadjusted", "Truncated Calibration"))
   
-  title <- paste(str_to_upper(scenario$dual), str_to_upper(scenario$race), "SUBPOPULATION GPS")
+  # Effective Sample Size
+  ess_2 <- sum(new_data$x$ipw)^2/sum(new_data$x$ipw^2)
+  ess_3 <- sum(new_data$x$cal)^2/sum(new_data$x$cal^2)
+  ess_4 <- sum(new_data$x$cal_trunc)^2/sum(new_data$x$cal_trunc^2)
+  ess <- rbind(ess, data.frame(ipw = ess_2, cal = ess_3, cal_trunc = ess_4, race = scenario$race, dual = scenario$dual))
+  
+  ifelse()
   
   balance_plot <- ggplot(data = df, aes(x = labs, y = vals, color = adjust)) +
     geom_point(pch = 21, size = 2) +
@@ -75,7 +85,6 @@ for (i in 1:nrow(scenarios)) {
     geom_hline(yintercept = 0.1, lty = 3, colour = "black") +
     coord_flip() +  # flip coordinates (puts labels on y axis)
     xlab("Covariates") + ylab("Absolute Correlation") +
-    ggtitle(title) +
     ylim(0, 0.35) +
     guides(color = guide_legend(title = "Implementation")) +
     theme_bw() +
@@ -86,8 +95,64 @@ for (i in 1:nrow(scenarios)) {
   
   print(i)
   
-  pdf(file = paste0("~/Figures/balance_plot_", scenario$dual, "_", scenario$race,"_sub.pdf"), width = 10, height = 8)
+  pdf(file = paste0("~/Figures/balance_plot_", scenario$dual, "_", scenario$race,".pdf"), width = 10, height = 8)
   balance_plot
   dev.off()
   
 }
+
+save(ess, file = "~/Data/ess.RData")
+
+# Panel Plot
+
+df <- NULL
+
+for (i in c(4:9)) {
+  
+  scenario <- scenarios[i,]
+  load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
+  
+  race <- paste(str_to_title(scenario$race), "Participants")
+  
+  if (i %in% c(4,7))
+    sep <- "All"
+  else if (i %in% c(5,8))
+    sep <- "Higher SEP"
+  else
+    sep <- "Lower SEP"
+  
+  bdat_1 <- bal_dat(a = new_data$x$pm25, x = new_data$x[,c(2,4:20)], weights = rep(1, nrow(new_data$x)))
+  bdat_2 <- bal_dat(a = new_data$x$pm25, x = new_data$x[,c(2,4:20)], weights = new_data$x$ipw)
+  bdat_3 <- bal_dat(a = new_data$x$pm25, x = new_data$x[,c(2,4:20)], weights = new_data$x$cal)
+  bdat_4 <- bal_dat(a = new_data$x$pm25, x = new_data$x[,c(2,4:20)], weights = new_data$x$cal_trunc)
+  
+  bdat_2$adjust <- "LM"
+  bdat_3$adjust <- "Calibration"
+  bdat_4$adjust <- "Truncated Calibration"
+  
+  df.tmp <- rbind(bdat_1, bdat_4)
+  df <- rbind(df, data.frame(df.tmp, race = race, sep = sep))
+  
+}
+
+df$adjust <- factor(df$adjust, levels = c("Unadjusted", "Truncated Calibration"))
+df$sep <- factor(df$sep, levels = c("All", "Higher SEP", "Lower SEP"))
+df$race <- factor(df$race, levels = c("Black Participants", "White Participants"))
+
+balance_plot <- ggplot(data = df, aes(x = labs, y = vals, color = adjust)) +
+  geom_point(pch = 21, size = 2) +
+  facet_grid(race ~ sep) +
+  geom_line(aes(group = adjust)) +
+  geom_hline(yintercept = 0, lty = 1) +
+  geom_hline(yintercept = 0.1, lty = 3, colour = "black") +
+  coord_flip() +  # flip coordinates (puts labels on y axis)
+  xlab("Covariates") + ylab("Absolute Correlation") +
+  ylim(0, 0.35) +
+  guides(color = guide_legend(title = "Implementation")) +
+  theme_bw() +
+  theme(axis.text.y = element_text(angle = 30, hjust = 1),
+        legend.position = "bottom")
+
+pdf(file = "~/Figures/panel_balance_plot.pdf", width = 16, height = 12)
+balance_plot
+dev.off()

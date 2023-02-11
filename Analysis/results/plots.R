@@ -219,7 +219,7 @@ prop_plot <- prop_dat %>%
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_y_continuous(breaks = c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)) +
-  scale_fill_manual(values = c("#D81B60", "#1E88E5", "#FFC107", "#004D40"),
+  scale_fill_manual(values = c("#882255", "#DDCC77", "#88CCEE", "#332288"),
                     labels = c(~ PM[2.5]*" > 8 "*mu*g*"/"*m^3,
                                ~ PM[2.5]*" > 9 "*mu*g*"/"*m^3,
                                ~ PM[2.5]*" > 10 "*mu*g*"/"*m^3,
@@ -241,8 +241,8 @@ exposure_plot <- pm_dat %>%
   geom_line(size = 1) +
   labs(x = "Year",
        y = ~"Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
-       color = "Race", 
-       linetype = "SEP") +
+       color = "Racial Identity", 
+       linetype = "Socioeconomic\n Position") +
   theme_bw() +
   theme(legend.position = c(0.85, 0.85),
         legend.background = element_rect(colour = "black"),
@@ -263,23 +263,24 @@ hr_tmp <- subset(hr, dual == "both" & race == "all" & pm0 == 12)
 # exposure response curve
 hr_plot <- hr_tmp %>%
   ggplot(aes(x = pm1, y = estimate)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
-  geom_hline(yintercept = 1, linetype = "dotted", color = "black") +
-  geom_segment(x = 8, y = 0.7, xend = 8, yend = hr_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
-  geom_segment(x = 9, y = 0.7, xend = 9, yend = hr_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
-  geom_segment(x = 10, y = 0.7, xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
-  geom_segment(x = 11, y = 0.7, xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
+  geom_segment(x = 8, y = 0.7, xend = 8, yend = hr_tmp$estimate[idx8], linetype = "dashed", color = "#882255") +
+  geom_segment(x = 9, y = 0.7, xend = 9, yend = hr_tmp$estimate[idx9], linetype = "dashed", color = "#DDCC77") +
+  geom_segment(x = 10, y = 0.7, xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#88CCEE") +
+  geom_segment(x = 11, y = 0.7, xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#332288") +
   geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted", color = "black") +
-  geom_segment(x = 3, y = hr_tmp$estimate[idx8], xend = 8, yend = hr_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
-  geom_segment(x = 3, y = hr_tmp$estimate[idx9], xend = 9, yend = hr_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
-  geom_segment(x = 3, y = hr_tmp$estimate[idx10], xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
-  geom_segment(x = 3, y = hr_tmp$estimate[idx11], xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
+  geom_segment(x = 3, y = hr_tmp$estimate[idx8], xend = 8, yend = hr_tmp$estimate[idx8], linetype = "dashed", color = "#882255") +
+  geom_segment(x = 3, y = hr_tmp$estimate[idx9], xend = 9, yend = hr_tmp$estimate[idx9], linetype = "dashed", color = "#DDCC77") +
+  geom_segment(x = 3, y = hr_tmp$estimate[idx10], xend = 10, yend = hr_tmp$estimate[idx10], linetype = "dashed", color = "#88CCEE") +
+  geom_segment(x = 3, y = hr_tmp$estimate[idx11], xend = 11, yend = hr_tmp$estimate[idx11], linetype = "dashed", color = "#332288") +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "black") +
   theme_bw() +
+  scale_color_identity() +
   coord_cartesian(xlim = c(6,12), 
                   ylim = c(0.92, 1.01)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
-       y = "Hazard Ratio") +
+       y = "Hazard Ratio of Mortality") +
   theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
   scale_y_continuous(breaks = seq(0.92, 1.01, by = 0.01)) +
   scale_x_continuous(breaks = c(6,7,8,9,10,11,12))
@@ -294,16 +295,16 @@ ar_tmp <- subset(ar, dual == "both" & race == "all")
 
 ar_plot <- ar_tmp %>%
   ggplot(aes(x = a.vals, y = estimate)) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
-  geom_segment(x = 8, y = -0.1, xend = 8, yend = ar_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
-  geom_segment(x = 9, y = -0.1, xend = 9, yend = ar_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
-  geom_segment(x = 10, y = -0.1, xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
-  geom_segment(x = 11, y = -0.1, xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
-  geom_segment(x = 3, y = ar_tmp$estimate[idx8], xend = 8, yend = ar_tmp$estimate[idx8], linetype = "dashed", color = "#D81B60") +
-  geom_segment(x = 3, y = ar_tmp$estimate[idx9], xend = 9, yend = ar_tmp$estimate[idx9], linetype = "dashed", color = "#1E88E5") +
-  geom_segment(x = 3, y = ar_tmp$estimate[idx10], xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#FFC107") +
-  geom_segment(x = 3, y = ar_tmp$estimate[idx11], xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#004D40") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
+  geom_segment(x = 8, y = -0.1, xend = 8, yend = ar_tmp$estimate[idx8], linetype = "dashed", color = "#882255") +
+  geom_segment(x = 9, y = -0.1, xend = 9, yend = ar_tmp$estimate[idx9], linetype = "dashed", color = "#DDCC77") +
+  geom_segment(x = 10, y = -0.1, xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#88CCEE") +
+  geom_segment(x = 11, y = -0.1, xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#332288") +
+  geom_segment(x = 3, y = ar_tmp$estimate[idx8], xend = 8, yend = ar_tmp$estimate[idx8], linetype = "dashed", color = "#882255") +
+  geom_segment(x = 3, y = ar_tmp$estimate[idx9], xend = 9, yend = ar_tmp$estimate[idx9], linetype = "dashed", color = "#DDCC77") +
+  geom_segment(x = 3, y = ar_tmp$estimate[idx10], xend = 10, yend = ar_tmp$estimate[idx10], linetype = "dashed", color = "#88CCEE") +
+  geom_segment(x = 3, y = ar_tmp$estimate[idx11], xend = 11, yend = ar_tmp$estimate[idx11], linetype = "dashed", color = "#332288") +
   theme_bw() +
   coord_cartesian(xlim = c(5,15), 
                   ylim = c(0.044,0.051)) +
@@ -329,14 +330,14 @@ hr_tmp <- subset(hr, race %in% c("black", "white") & pm0 == 12)
 
 hr_strata <- hr_tmp %>%
   ggplot(aes(x = pm1, y = estimate, color = factor(race_label))) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_line(size = 1) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = "dotted") +
   geom_hline(yintercept = 1, linetype = "dotted", color = "black") +
   geom_segment(x = 12, y = 0.7, xend = 12, yend = hr_tmp$estimate[idx12], linetype = "dotted", color = "black") +
   facet_wrap(~ dual_label) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")", 
-       y = "Hazard Ratio",
-       color = "Race") +
+       y = "Hazard Ratio of Mortality",
+       color = "Racial Identity") +
   theme_bw() +
   coord_cartesian(xlim = c(6,12), 
                   ylim = c(0.86, 1.02)) +
@@ -368,7 +369,7 @@ ar_strata <- subset(ar_tmp, a.vals < 16 & a.vals > 4) %>%
                   ylim = c(0.02, 0.11)) +
   labs(x = ~ "Annual Average "*PM[2.5]*" ("*mu*g*"/"*m^3*")",
        y = "Absolute Mortality Rate", 
-       color = "Race") +
+       color = "Racial Identity") +
   theme_bw() +
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5, face = "bold")) +
@@ -394,8 +395,8 @@ contrast_plot <- contr %>%
   geom_hline(yintercept = 0) +
   facet_wrap(~ dual_label) +
   theme_bw() +
-  labs(x = ~ PM[2.5]*" Contrasts", y = "1 - (Hazard Ratio)",
-       color = "Race", linetype = "Model") +
+  labs(x = ~ PM[2.5]*" Contrasts", y = "1 - (Hazard Ratio of Mortality)",
+       color = "Racial Identity", linetype = "Model") +
   theme_bw() +
   coord_cartesian(ylim = c(-0.01, 0.09)) +
   theme(legend.position = "bottom",
