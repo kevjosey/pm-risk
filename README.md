@@ -17,7 +17,7 @@ The scripts described below are presented in the order with which they should be
 6. [`Analysis/results`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/results/plot.R): Contains scripts for generating plots and tables from data generated in (1) and the models fit in (4)-(5).
 7. [`Analysis/sensitivity`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/sensitivity): Code for fitting G-Computation and GPS as a regressor sensitivity analyses. Also included is code to visualize covariate balance for various weighting methods. 
 
-### R
+### Functions
 
 - [`Functions/calibrate.R`](https://github.com/kevjosey/pm-risk/blob/main/Functions/calibrate.R): Generic calibration function for fitting covariate balancing weights. Usable for binary, categorical, or continuous exposures. All that is needed is the correct target and the associated constraint. Implemented in [`Analysis/fit_weights.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_weights.R).</li>
 - [`Functions/gam_models.R`](https://github.com/kevjosey/pm-risk/blob/main/Functions/gam_models.R): Wrapper functions for fitting spline outcome models (formerly generalized additive outcome models) assuming a quasi-Poisson likelihood. Functions output components used to construct the doubly-robust pseudo-outcome applied in [`Functions/erf_models.R`](https://github.com/kevjosey/pm-risk/blob/main/Functions/erf_models.R). Implemented in [`Analysis/fit_models.R`](https://github.com/kevjosey/pm-risk/blob/main/Analysis/fit_models.R).</li>
