@@ -37,10 +37,8 @@ count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop,
     }
     
     # Integration Matrix
-    mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE, 
-                       nrow = nrow(mat.pool[,-(1:4)]))
-    phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:4)])), byrow = TRUE,
-                       nrow = nrow(mat.pool[,-(1:4)]))
+    mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool)), byrow = TRUE, nrow = nrow(mat.pool))
+    phat.mat <- matrix(rep(phat.vals, nrow(mat.pool)), byrow = TRUE, nrow = nrow(mat.pool))
     int.mat <- (mat.pool[,-(1:4)] - mhat.mat)*phat.mat
     
     # KWLS Regression
@@ -69,17 +67,15 @@ count_erf <- function(resid.lm, resid.cal, resid.cal_trunc, log.pop,
     out.cal <- approx(locpoly(resid.dat$a, resid.dat$psi.cal, bandwidth = bw[2]), xout = a.vals)$y
     out.cal_trunc <- approx(locpoly(resid.dat$a, resid.dat$psi.cal_trunc, bandwidth = bw[3]), xout = a.vals)$y
     
-    return(list(estimate.lm = out.lm, estimate.cal = out.cal,
-                estimate.cal_trunc = out.cal_trunc))
+    return(list(estimate.lm = out.lm, estimate.cal = out.cal, estimate.cal_trunc = out.cal_trunc))
     
   }
   
 }
 
-# count_erf where we consider only one weight implementation
+# count_erf where we consider only one weight implementation for bootstrapping
 count_erf_boot <- function(resid, log.pop, muhat.mat, w.id, a, x.id, phat.vals = NULL,
-                           a.vals = seq(min(a), max(a), length.out = 100), 
-                           bw = 1, se.fit = TRUE) {	
+                           a.vals = seq(min(a), max(a), length.out = 100), bw = 1) {	
   
   # Separate Data into List
   mat.list <- split(cbind(exp(log.pop), resid, muhat.mat), w.id)
@@ -97,37 +93,8 @@ count_erf_boot <- function(resid, log.pop, muhat.mat, w.id, a, x.id, phat.vals =
   
   # Pseudo-Outcomes
   resid.dat$psi <- with(resid.dat, X1 + mhat)
-  
-  if (se.fit) {
-    
-    if (is.null(phat.vals)) {
-      warning("Setting phat.vals = rep(1, length(a.vals))")
-      phat.vals <- rep(1, length(a.vals))
-    }
-    
-    # Integration Matrix
-    mhat.mat <- matrix(rep(mhat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE, 
-                       nrow = nrow(mat.pool[,-(1:2)]))
-    phat.mat <- matrix(rep(phat.vals, nrow(mat.pool[,-(1:2)])), byrow = TRUE,
-                       nrow = nrow(mat.pool[,-(1:2)]))
-    int.mat <- (mat.pool[,-(1:2)] - mhat.mat)*phat.mat
-    
-    # KWLS Regression
-    out <- sapply(a.vals, kern_est, psi = resid.dat$psi, a = resid.dat$a, 
-                  bw = bw[1], a.vals = a.vals, se.fit = se.fit, int.mat = int.mat)
-    
-    estimate <- out[1,]
-    variance <- out[2,]
-    
-    return(list(estimate = estimate, variance = variance))
-    
-  } else {
-    
-    out <- approx(locpoly(resid.dat$a, resid.dat$psi, bandwidth = bw[1]), xout = a.vals)$y
-    
-    return(list(estimate = out))
-    
-  }
+  out <- approx(locpoly(resid.dat$a, resid.dat$psi, bandwidth = bw[1]), xout = a.vals)$y
+  return(list(estimate = out))
   
 }
 

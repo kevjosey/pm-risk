@@ -218,8 +218,8 @@ dev.off()
 
 ## Stratified by Race x SEP
 
-hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher SEP",
-                        ifelse(hr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
+hr$dual_label <- ifelse(hr$dual == "high", "Panel B: Higher Income",
+                        ifelse(hr$dual == "low", "Panel C: Low Income", "Panel A: All"))
 hr$race_label <- str_to_title(hr$race)
 
 hr_tmp1 <- hr_tmp2 <- subset(hr, race %in% c("black", "white") & pm0 == 12)
@@ -257,8 +257,8 @@ dev.off()
 
 contr <- subset(contrast, race %in% c("black", "white"))
 contr$contrast <- factor(contr$contrast, levels = c("12 vs. 11", "12 vs. 10", "12 vs. 9", "12 vs. 8"))
-contr$dual_label <- ifelse(contr$dual == "high", "Panel B: Higher SEP",
-                           ifelse(contr$dual == "low", "Panel C: Lower SEP", "Panel A: All"))
+contr$dual_label <- ifelse(contr$dual == "high", "Panel B: Higher Income",
+                           ifelse(contr$dual == "low", "Panel C: Low Income", "Panel A: All"))
 contr$race_label <- str_to_title(contr$race)
 
 contrast_plot <- contr %>%

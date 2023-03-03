@@ -5,7 +5,6 @@ library(dplyr)
 library(splines)
 library(fst)
 
-
 # scenarios
 scenarios <- expand.grid(dual = c("both", "high", "low"),
                          race = c("all", "white", "black"))
@@ -25,8 +24,11 @@ options(digits = 5)
 for (i in c(1,4,7,6,5,9,8)) {
   
   scenario <- scenarios[i,]
+  
+  # load ZIP-code data
   load(paste0(dir_data, scenario$dual, "_", scenario$race, ".RData"))
   zip_data <- new_data$x
+  
   mean(zip_data$mean_bmi,na.rm=T); sd(zip_data$mean_bmi,na.rm=T)
   mean(zip_data$smoke_rate,na.rm=T)*100;  sd(zip_data$smoke_rate*100,na.rm=T)
   mean(zip_data$poverty,na.rm=T)*100; sd(zip_data$poverty*100,na.rm=T)
@@ -48,7 +50,6 @@ for (i in c(1,4,7,6,5,9,8)) {
   mean(zip_data$regionWEST)*100
   
 }
-
 
 f <- list.files("/n/dominici_nsaph_l3/Lab/data/ci3_health_data/medicare/mortality/1999_2016/wu/cache_data/merged_by_year_v2",
                 pattern = "\\.fst", full.names = TRUE)
@@ -93,18 +94,21 @@ national_merged2016$age_break[national_merged2016$entry_age_break %in% c(7,8)] <
 national_merged2016$entry_age_break <- national_merged2016$age_break
 national_merged2016$age_break <- NULL
 
+# unique persons
 qid_data <- national_merged2016 %>% group_by(qid) %>% filter(row_number()==1)
 
-national_merged2016_sub <- subset(national_merged2016, race == 1 & dual == 1)
-qid_data_sub <- subset(qid_data, race == 1 & dual == 1)
+# Individual-level data
+national_merged2016_sub <- subset(national_merged2016, race == 1 & dual == 1) # need to change based on dual and race status
+qid_data_sub <- subset(qid_data, race == 1 & dual == 1) # need to change based on dual and race status
 nrow(qid_data_sub)
 nrow(national_merged2016_sub)
 nrow(qid_data_sub)/nrow(qid_data)*100
 nrow(national_merged2016_sub)/nrow(national_merged2016)*100
-# mean(qid_data_sub$entry_age);sd(qid_data$entry_age)
+mean(qid_data_sub$entry_age);sd(qid_data$entry_age)
 table(qid_data_sub$entry_age_break)/nrow(qid_data_sub)*100
 table(qid_data_sub$sex)/nrow(qid_data_sub)*100
 table(qid_data_sub$dual)/nrow(qid_data_sub)*100
+
 sum(national_merged2016_sub$dead)
 sum(national_merged2016_sub$dead)/sum(national_merged2016$dead)*100
 

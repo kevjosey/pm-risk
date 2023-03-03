@@ -117,7 +117,7 @@ for (i in 1:nrow(scenarios)) {
     # set bandwidth from original analysis
     target <- count_erf_boot(resid = z$resid, muhat.mat = z$muhat.mat, log.pop = z$log.pop,
                              w.id = z$id, x.id = x$boot.id, a = x$pm25, bw = bw,
-                             a.vals = a.vals, phat.vals = phat.vals, se.fit = FALSE)
+                             a.vals = a.vals, phat.vals = phat.vals)
     
     print(paste("Completed Scenario: ", i))
     return(target$estimate)
