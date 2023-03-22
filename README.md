@@ -26,10 +26,10 @@ The scripts described below are presented in the order with which they should be
 
 Contains scripts for generating plots and tables from data generated in (1) and the models fit in (4)-(5).
 
-![Alt text](/Figures/Figure2.png?raw=true "Exposure Response Curves (Hazard Ratios)")
+![Alt text](/Figures/Figure3.png?raw=true "Exposure Response Curves (Hazard Ratios)" | width=250)
 
 ### Sensitivity
 
 Contains code for fitting G-Computation and GPS as a regressor sensitivity analyses. Also included is code to visualize covariate balance for various weighting methods. 
 
-![Alt text](/Figures/FigureS4.png?raw=true "Senstivity Analysis of Exposure Response Contrasts")
+![Alt text](/Figures/FigureS3.png?raw=true "Senstivity Analysis for the Exposure Response Contrasts" | width=250)
