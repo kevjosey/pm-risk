@@ -3,6 +3,7 @@ library(data.table)
 library(tidyr)
 library(dplyr)
 library(splines)
+library(gam)
 
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/Functions/gam_models.R')
 source('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/pm-risk/Functions/erf_models.R')

@@ -25,8 +25,8 @@ load(paste0(dir_data,"aggregate_data.RData"))
 # Function for Fitting Weights
 create_strata <- function(aggregate_data,
                           dual = c("high","low"),
-                          race = c("white", "black", "asian", 
-                                          "hispanic", "other")) {
+                          race = c("white", "black", "asian",
+                                   "hispanic", "other")) {
   
   if (dual == "high") {
     dual0 <- 0
