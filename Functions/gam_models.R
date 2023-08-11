@@ -10,7 +10,7 @@ gam_models <- function(y, a, w, ipw, cal, cal_trunc, id,
   ybar[y > exp(log.pop)] <- 1 - .Machine$double.eps
   
   # estimate nuisance outcome model with glm + splines
-  mumod <- glm(ybar ~ ns(a, 6) + . - a, weights = exp(log.pop), model = FALSE,
+  mumod <- gam(ybar ~ s(a, df = 6) + . + (a:.) - a, weights = exp(log.pop), model = FALSE,
                data = data.frame(ybar = ybar, a = a, w), family = quasipoisson())
   muhat <- mumod$fitted.values
   
