@@ -21,9 +21,9 @@ set.seed(42)
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_mod <- c('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/',
-             '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/',
-             '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/')
+dir_mod <- c('/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR/',
+             '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg/',
+             '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp/')
 
 mod <- c("Doubly-Robust", "GPS as a Regressor", "G-Computation")
 

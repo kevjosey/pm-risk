@@ -25,7 +25,7 @@ bw <- 1.8 # KWLS bandwidth
 ### M-out-of-N Bootstrap
 
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR/'
 
 # function for getting cluster bootstrap data
 # need to tweak to be more general

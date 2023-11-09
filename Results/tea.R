@@ -13,7 +13,7 @@ a.vals <- seq(2, 31, length.out = 146)
 
 # data directories
 dir_data <- '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
+dir_out <- '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR/'
 
 tea_8 <- tea_9 <- tea_10 <- tea_11 <- tea_12 <- data.frame()
 

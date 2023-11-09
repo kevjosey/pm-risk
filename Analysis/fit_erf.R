@@ -24,7 +24,7 @@ bw.seq <- seq(0.1, 3, by = 0.1)
 
 # Load/Save models
 dir_mod = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/Strata_Data/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/DR/'
 
 ## Run Models
 

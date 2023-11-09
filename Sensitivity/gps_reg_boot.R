@@ -25,7 +25,7 @@ a.vals <- seq(2, 31, length.out = 146)
 boot.iter <- 1000 # bootstrap iterations
 
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg/'
 
 # function for getting cluster bootstrap data
 # need to tweak to be more general

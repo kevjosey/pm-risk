@@ -47,7 +47,7 @@ bootstrap_data <- function(data, index, u.zip) {
 
 # Save Location
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GComp/'
 
 for (i in 1:nrow(scenarios)) {
   

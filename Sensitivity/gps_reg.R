@@ -20,7 +20,7 @@ a.vals <- seq(2, 31, length.out = 146)
 
 # Save Location
 dir_data = '/n/dominici_nsaph_l3/Lab/projects/analytic/erc_strata/qd/'
-dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg_All/'
+dir_out = '/n/dominici_nsaph_l3/projects/kjosey-erc-strata/Output/GPSReg/'
 
 for (i in 1:nrow(scenarios)) {
   
